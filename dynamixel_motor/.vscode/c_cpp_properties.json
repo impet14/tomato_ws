@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/hayashi/worksp/tomato_ws/devel/include",
+                "/home/hayashi/worksp/catkin_ws/devel/include",
+                "/opt/ros/melodic/include",
+                "/home/hayashi/worksp/tomato_ws/src/crane_plus_arm/crane_plus_camera_calibration/include",
+                "/home/hayashi/worksp/tomato_ws/src/crane_plus_arm/crane_plus_ikfast_arm_plugin/include",
+                "/home/hayashi/worksp/tomato_ws/src/DynamixelSDK/ros/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

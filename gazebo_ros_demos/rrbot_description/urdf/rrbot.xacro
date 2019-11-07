@@ -1,0 +1,368 @@
+<?xml version="1.0"?>
+<!-- Revolute-Revolute Manipulator -->
+<robot name="rrbot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Constants for robot dimensions -->
+  <xacro:property name="PI"        value="3.1415926535897931"/>
+  <xacro:property name="radian"    value="1.57079632679"/>
+  <xacro:property name="mass"      value="1" /> <!-- arbitrary value for mass -->
+  <xacro:property name="width"     value="0.05" /> <!-- Square dimensions (widthxwidth) of beams -->
+  <xacro:property name="height0"   value="0.260" /> <!-- Link 0 -->
+  <xacro:property name="height1"   value="0.043" /> <!-- Link 1 -->
+  <xacro:property name="height2"   value="0.105" /> <!-- Link 2 -->
+  <xacro:property name="height3"   value="0.043" /> <!-- Link 3 -->
+  <xacro:property name="height4"   value="0.041" /> <!-- Link 4 -->
+  <xacro:property name="height5"   value="0.11" /> <!-- Link 5 -->
+  <xacro:property name="height6"   value="0.125" /> <!-- Link 6 -->
+  <xacro:property name="heightEEF" value="0.03" /> <!-- Link 7  EEF Link-->
+
+  <xacro:property name="MinAngle"  value="-2.24346" /> <!-- Min angle-->
+  <xacro:property name="MaxAngle"  value="2.24346" /> <!-- Max angle-->
+  <xacro:property name="heightEEF" value="0.03" /> <!-- Link 7  EEF Link-->
+
+  <xacro:property name="damp_value"  value="0.0" /> <!-- Link 6 -->
+
+  <xacro:property name="camera_link" value="0.05" /> <!-- Size of square 'camera' box -->
+  <xacro:property name="axel_offset" value="0" /> <!-- Space btw top of beam and the each joint -->
+
+  <xacro:macro name="default_inertial" params="mass">
+    <inertial>
+      <mass value="${mass}" />
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+    </inertial>
+  </xacro:macro>
+
+  <!-- Import all Gazebo-customization elements, including Gazebo colors -->
+  <xacro:include filename="$(find rrbot_description)/urdf/rrbot.gazebo" />
+  <!-- Import Rviz colors -->
+  <xacro:include filename="$(find rrbot_description)/urdf/materials.xacro" />
+
+  <!-- Used for fixing robot to Gazebo 'base_link' -->
+  <link name="world"/>
+
+  <joint name="fixed" type="fixed">
+    <parent link="world"/>
+    <child link="link0"/>
+  </joint>
+
+  <!-- Base Link -->
+  <link name="link0">
+    <collision>
+      <origin xyz="0 0 ${height0/2}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height0}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 ${height0/2}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height0}"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 ${height0/2}" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height0*height0)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height0*height0 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint0" type="revolute">
+    <parent link="link0"/>
+    <child link="link1"/>
+    <origin xyz="0 0 ${height0}" rpy="0 0 0"/>
+    <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="${damp_value}"/>
+  </joint>
+
+  <!-- 1st Link -->
+  <link name="link1">
+    <collision>
+      <origin xyz="0 0 ${height1/2}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height1}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 ${height1/2}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height1}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 ${height1/2}" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height1*height1)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height1*height1 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint1" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 ${height1 - axel_offset}" rpy="${radian} 0 0"/>
+    <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="${damp_value}"/>
+  </joint>
+
+  <!-- 2nd Link -->
+  <link name="link2">
+    <collision>
+      <origin xyz="0 ${height2/2 - axel_offset} 0" rpy="${radian} 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height2}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 ${height2/2 - axel_offset} 0" rpy="${radian} 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height2}"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 ${height2/2 - axel_offset} 0" rpy="${radian} 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height2*height2)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height2*height2 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint2" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 ${height2 - axel_offset*2} 0" rpy="${-radian} 0 0"/>
+    <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="${damp_value}"/>
+  </joint>
+
+  <!-- 3rd Link -->
+  <link name="link3">
+    <collision>
+      <origin xyz="0 0 ${height3/2 - axel_offset}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height3}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 ${height3/2 - axel_offset}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height3}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 ${height3/2 - axel_offset}" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height3*height3)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height3*height3 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint3" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0 0 ${height3 - axel_offset*2}" rpy="${radian} 0 ${PI}"/>
+    <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="${damp_value}"/>
+  </joint>
+
+  <!-- 4th Link -->
+  <link name="link4">
+    <collision>
+      <origin xyz="0 ${height4/2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height4}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 ${height4/2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height4}"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 ${height4/2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height4*height4)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height4*height4 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint4" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="0 ${height4 - axel_offset*2} 0" rpy="${-radian} 0 0"/>
+    <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="${damp_value}"/>
+  </joint>
+
+  <!-- 5th Link -->
+  <link name="link5">
+    <collision>
+      <origin xyz="0 0 ${height5/2 - axel_offset}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height5}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 ${height5/2 - axel_offset}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height5}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 ${height5/2 - axel_offset}" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height5*height5)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height5*height5 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="joint5" type="revolute">
+    <parent link="link5"/>
+    <child link="link6"/>
+    <origin xyz="0 0 ${height5 - axel_offset}" rpy="${radian} 0 0"/>
+    <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="${damp_value}"/>
+  </joint>
+
+  <!-- 6th Link -->
+  <link name="link6">
+    <collision>
+      <origin xyz="0 ${height6/2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height6}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 ${height6/2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${height6}"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 ${height6/2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + height6*height5)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (height6*height6 + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <joint name="EEFjoint" type="fixed">
+    <parent link="link6"/>
+    <child link="EEFlink"/>
+    <origin xyz="0 ${height6 - axel_offset} 0" rpy="${-radian} 0 0" />
+  </joint>
+
+  <!-- 7th EEF Link -->
+  <link name="EEFlink">
+    <collision>
+      <origin xyz="0 0 ${heightEEF/2 - axel_offset}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${heightEEF}"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 ${heightEEF/2 - axel_offset}" rpy="0 0 0"/>
+      <geometry>
+	<box size="${width} ${width} ${heightEEF}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 ${heightEEF/2 - axel_offset}" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+	  ixx="${mass / 12.0 * (width*width + heightEEF*heightEEF)}" ixy="0.0" ixz="0.0"
+	  iyy="${mass / 12.0 * (heightEEF*heightEEF + width*width)}" iyz="0.0"
+	  izz="${mass / 12.0 * (width*width + width*width)}"/>
+    </inertial>
+  </link>
+
+  <!-- End Effector -->
+  <xacro:macro name="gripper" params="prefix reflect">
+    <joint name="${prefix}_gripper_joint" type="revolute">
+
+      <axis xyz="0 ${reflect} 0"/> 
+      <!-- <limit effort="1000.0" lower="-0.548" upper="0.548" velocity="0.5"/> -->
+      <limit lower="${MinAngle}" upper="${MaxAngle}" effort="0" velocity="0"/>
+      <origin rpy="0 0 0" xyz="${reflect*-0.01} 0 ${heightEEF}"/>
+      <parent link="EEFlink"/>
+      <child link="${prefix}_gripper"/>
+      <limit effort="30" velocity="1.0"/>
+      <dynamics damping="${damp_value}" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}_gripper">
+      <visual>
+        <origin rpy="${(reflect-1)/2*pi} ${-radian} ${radian}" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://urdf_tutorial/meshes/l_finger.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://urdf_tutorial/meshes/l_finger.dae"/>
+        </geometry>
+        <origin rpy="${(reflect-1)/2*pi} ${-radian} ${radian}" xyz="0 0 0"/>
+      </collision>
+      <xacro:default_inertial mass="0.05"/>
+    </link>
+
+    <transmission name="${prefix}_gripper_trans" type="SimpleTransmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <actuator name="${prefix}_gripper_motor">
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+      <joint name="${prefix}_gripper_joint">
+        <hardwareInterface>PositionJointInterface</hardwareInterface>
+      </joint>
+    </transmission>    
+  </xacro:macro>
+  <xacro:gripper prefix="left" reflect="1" />
+  <xacro:gripper prefix="right" reflect="-1" />
+
+
+</robot>

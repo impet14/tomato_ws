@@ -1,0 +1,17 @@
+<launch>
+<!-- Start single_joint controller -->
+    <rosparam file="$(find conbe)/config/joints.yaml" command="load"/>
+    <node name="controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
+          args="--manager=dxl_manager
+                --port=conbe_L_port
+                joint0_controller                       
+                joint1-1_controller                       
+                joint1-2_controller                       
+                joint2_controller                       
+                joint3_controller
+                joint4_controller                       
+                joint5_controller
+                joint6_controller                       
+                "
+          output="screen"/>          
+</launch>

@@ -1,0 +1,41 @@
+<launch>
+<!-- Start single_joint controller -->
+    <rosparam file="$(find conbe)/config/joints.yaml" command="load"/>
+    <node name="controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
+          args="--manager=dxl_manager
+                --port=conbe_L_port
+                joint1_controller                       
+                joint3_controller                       
+                joint4_controller
+                joint5_controller                       
+                joint6_controller
+                joint7_controller                       
+                "
+          output="screen"/>
+
+
+    <!-- Start dual_motor joint controller -->
+    <rosparam file="$(find conbe)/config/joints.yaml" command="load"/>
+    <node name="dual_motor_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
+          args="--manager=dxl_manager
+                --port=conbe_L_port
+                joint2_controller
+                "
+          output="screen"/>
+
+  <!-- Start joints trajectory controller controller -->
+    <rosparam file="$(find conbe)/config/joints_trajectory_controller.yaml" command="load"/>
+    <node name="controller_spawner_meta" pkg="dynamixel_controllers" type="controller_spawner.py"
+          args="--manager=dxl_manager
+                --type=meta
+                f_arm_controller
+                joint1_controller                       
+                joint2_controller                       
+                joint3_controller                       
+                joint4_controller
+                joint5_controller                       
+                joint6_controller
+                joint7_controller 
+               "
+          output="screen"/>
+</launch>
