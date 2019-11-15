@@ -31,5 +31,7 @@
   <build_depend>rrbot_description</build_depend>
   <run_depend>rrbot_description</run_depend>
 
+  <build_depend>handeye_cam</build_depend>
+  <run_depend>handeye_cam</run_depend>
 
 </package>

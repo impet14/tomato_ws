@@ -36,8 +36,14 @@ def process(msg):
 		if(x.id != 12):
 			# print("ID: {}".format(x.id))
 			if(x.id >= 13):
-				joint_states.name.append(joints[x.id-start_ID-1])
-				joint_states.position.append((x.position-offset[x.id-start_ID-1])*(300.0/1023)*(pi/180))
+				if(x.id == 17): # in rrbot.xacro, the eef joint's name is left/right _gripper_joint. so chenge the name ans send the same parameter respectively.
+					eef_joints = ['left_gripper_joint','right_gripper_joint']
+					for joint in eef_joints:
+						joint_states.name.append(joint)
+						joint_states.position.append((x.position-offset[x.id-start_ID-1])*(300.0/1023)*(pi/180))				
+				else:
+					joint_states.name.append(joints[x.id-start_ID-1])
+					joint_states.position.append((x.position-offset[x.id-start_ID-1])*(300.0/1023)*(pi/180))
 			else:
 				joint_states.name.append(joints[x.id-start_ID])
 				joint_states.position.append((x.position-offset[x.id-start_ID])*(300.0/1023)*(pi/180))

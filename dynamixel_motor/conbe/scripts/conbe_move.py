@@ -10,6 +10,9 @@ from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
 
+import dxl_move as util
+
+
 def all_close(goal, actual, tolerance):
   """
   Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
@@ -164,17 +167,11 @@ class MoveGroupPythonIntefaceTutorial(object):
       while not rospy.is_shutdown():
         move_group = self.move_group
         print (move_group.get_current_pose())
-        # joint_goal = move_group.get_current_joint_values()
-        # joint_goal[0] = 0
-        # joint_goal[1] = 0
-        # joint_goal[2] = 0
-        # joint_goal[3] = 0
-        # joint_goal[4] = 0
-        # joint_goal[5] = 0
-        # # joint_goal[6] = 0
-        # move_group.go(joint_goal, wait=True)
 
         rospy.sleep(2)
+        
+        ##make instanse to control EEF
+        eef_joint = util.DXL_CONTROL(node_name='conbe_move',control_joint='joint6_controller',max_load=0.006)
 
         joint_goal = move_group.get_current_joint_values()
         joint_goal[0] = 0
@@ -183,10 +180,11 @@ class MoveGroupPythonIntefaceTutorial(object):
         joint_goal[3] = 0
         joint_goal[4] = 0
         joint_goal[5] = pi/2
-        # joint_goal[6] = 0
+        eef_joint.open()
+
         move_group.go(joint_goal, wait=True)
 
-        rospy.sleep(2)
+        # rospy.sleep(2)
 
         pose_goal = self.move_group.get_current_pose().pose
         
@@ -244,8 +242,9 @@ class MoveGroupPythonIntefaceTutorial(object):
                                           0.01,        # eef_step
                                           0.0)         # jump_threshold
         move_group.execute(plan, wait=True)
+        eef_joint.close()
 
-        rospy.sleep(2)
+        # rospy.sleep(2)
 
         print (move_group.get_current_pose())
         

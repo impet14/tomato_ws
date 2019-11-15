@@ -12,7 +12,7 @@
     		<rosparam param="/source_list">[/conbe/joint_states]</rosparam>
   </node>
 
-  <node pkg="tf" type="static_transform_publisher" name="map_base_tf" args="0 0 0 0 0 0 /map /bottom_link 50" />
+  <!-- <node pkg="tf" type="static_transform_publisher" name="map_base_tf" args="0 0 0 0 0 0 /map /bottom_link 50" /> -->
 
   <!-- convert joint states to TF transforms for rviz, etc -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"

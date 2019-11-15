@@ -18,6 +18,6 @@
     <include file="$(find conbe_config)/launch/moveit_rviz.launch"/>
 
     <!-- Locate the D435 RGBD camera -->
-    <!-- <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster3" args="0.300212681174 0.431016505685 0.310726350904 -0.45174654887 0.719727286807 -0.462286824386 0.253394120311 /iiwa_link_0 /camera_color_optical_frame 100" /> -->
-    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0.42 0.265 0.17 3.14159265359 0 0 /world /camera_link 100" />
+    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="-0.42 -0.20 0.431 0 0 0 /world /camera_link 100" />
+
 </launch>

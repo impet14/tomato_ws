@@ -24,7 +24,7 @@ import serial
 import sys
 import platform
 
-LATENCY_TIMER = 16
+LATENCY_TIMER = 0
 DEFAULT_BAUDRATE = 1000000
 
 

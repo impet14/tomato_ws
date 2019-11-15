@@ -54,17 +54,40 @@
     <disable_collisions link1="EEFlink" link2="left_gripper" reason="Adjacent" />
     <disable_collisions link1="EEFlink" link2="link5" reason="Never" />
     <disable_collisions link1="EEFlink" link2="link6" reason="Adjacent" />
+
     <disable_collisions link1="EEFlink" link2="right_gripper" reason="Adjacent" />
     <disable_collisions link1="left_gripper" link2="link5" reason="Never" />
     <disable_collisions link1="left_gripper" link2="link6" reason="Never" />
     <disable_collisions link1="link0" link2="link1" reason="Adjacent" />
+    <!-- might be dengerous if the eef hit the joint0. change here if it could happen -->
+    <disable_collisions link1="link0" link2="right_gripper" reason="Never" />
+    <disable_collisions link1="link0" link2="right_gripper" reason="Never" />
+
     <disable_collisions link1="link1" link2="link2" reason="Adjacent" />
     <disable_collisions link1="link1" link2="link3" reason="Never" />
     <disable_collisions link1="link1" link2="link4" reason="Never" />
+    <disable_collisions link1="link1" link2="link5" reason="Never" />
+    <disable_collisions link1="link1" link2="link6" reason="Never" />
+
     <disable_collisions link1="link2" link2="link3" reason="Adjacent" />
+    <disable_collisions link1="link2" link2="link4" reason="Never" />
+    <disable_collisions link1="link2" link2="link5" reason="Never" />
+    <disable_collisions link1="link2" link2="link6" reason="Never" />
+
+
     <disable_collisions link1="link3" link2="link4" reason="Adjacent" />
+    <disable_collisions link1="link3" link2="link5" reason="Never" />
+    <disable_collisions link1="link3" link2="link6" reason="Never" />
+
+
     <disable_collisions link1="link4" link2="link5" reason="Adjacent" />
+    <disable_collisions link1="link4" link2="link6" reason="Never"/>
+
+
     <disable_collisions link1="link5" link2="link6" reason="Adjacent" />
     <disable_collisions link1="link5" link2="right_gripper" reason="Never" />
     <disable_collisions link1="link6" link2="right_gripper" reason="Never" />
+    
+    <!-- add this to allow gripper to hit in the simulater(doesn't matter since the simulator isn't the real eef-shape) -->
+    <disable_collisions link1="left_gripper" link2="right_gripper" reason="Never" />
 </robot>

@@ -50,6 +50,9 @@ import geometry_msgs.msg
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+
+import tf
+from visualization_msgs.msg import Marker
 ## END_SUB_TUTORIAL
 
 
@@ -147,7 +150,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.group_names = group_names
 
 
-  def go_to_joint_state(self):
+  def go_to_joint_state(self,joint_angle):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
@@ -161,12 +164,12 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## thing we want to do is move it to a slightly better configuration.
     # We can get the joint values from the group and adjust some of the values:
     joint_goal = move_group.get_current_joint_values()
-    joint_goal[0] = 0
-    joint_goal[1] = 0
-    joint_goal[2] = 0
-    joint_goal[3] = 0
-    joint_goal[4] = 0
-    joint_goal[5] = 0
+    joint_goal[0] = joint_angle[0]
+    joint_goal[1] = joint_angle[1]
+    joint_goal[2] = joint_angle[2]
+    joint_goal[3] = joint_angle[3]
+    joint_goal[4] = joint_angle[4]
+    joint_goal[5] = joint_angle[5]
     # joint_goal[6] = 0
 
     # The go command can be called with joint values, poses, or without any
@@ -183,7 +186,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     return all_close(joint_goal, current_joints, 0.01)
 
 
-  def go_to_pose_goal(self):
+  def go_to_pose_goal(self,px,py,pz,ox=0,oy=0,oz=0,ow=1):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
@@ -196,20 +199,26 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## We can plan a motion for this group to a desired pose for the
     ## end-effector:
     pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.w = 1.0
-    pose_goal.position.x = 0.0
-    pose_goal.position.y = 0.0
-    pose_goal.position.z = 0.0
+    pose_goal.orientation.x = ox
+    pose_goal.orientation.y = oy
+    pose_goal.orientation.z = oz
+    pose_goal.orientation.w = ow
+    pose_goal.position.x = px
+    pose_goal.position.y = py
+    pose_goal.position.z = pz
 
     move_group.set_pose_target(pose_goal)
 
     ## Now, we call the planner to compute the plan and execute it.
     plan = move_group.go(wait=True)
+
     # Calling `stop()` ensures that there is no residual movement
     move_group.stop()
     # It is always good to clear your targets after planning with poses.
     # Note: there is no equivalent function for clear_joint_value_targets()
     move_group.clear_pose_targets()
+
+
 
     ## END_SUB_TUTORIAL
 
@@ -451,33 +460,61 @@ def main():
   try:
     print ""
     print "----------------------------------------------------------"
-    print "Welcome to the MoveIt MoveGroup Python Interface Tutorial"
+    print "Start the MoveIt MoveGroup Python Interface "
     print "----------------------------------------------------------"
     print "Press Ctrl-D to exit at any time"
     print ""
-    # print "============ Press `Enter` to begin the tutorial by setting up the moveit_commander ..."
-    # raw_input()
+
     tutorial = MoveGroupPythonIntefaceTutorial()
+
+    print "============ Press `Enter` to go to the target position ..."
+    raw_input()
+
+    ###################################
+    ## here describe the listener
+    ###################################
+    target_marker_node = "/target_marker_link0_frame"
+    print("waiting for  --/target_maker_link0_frame-- message")
+
+    while not rospy.is_shutdown():
+        try:
+            #receive the target msg which is in target_frame
+            target_msg = rospy.wait_for_message(target_marker_node, Marker)
+            target_ref_link0_point = target_msg.points
+
+            px = target_ref_link0_point[0].x
+            py = target_ref_link0_point[0].y
+            pz = target_ref_link0_point[0].z - 0.05
+
+            ox = 0.5
+            oy = 0.5
+            oz = 0.5
+            ow = 0.5
+
+            tutorial.go_to_pose_goal(px,py,pz,ox,oy,oz,ow)
+            rospy.sleep(10)
+            
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
+
+
+    
 
     # print "============ Press `Enter` to execute a movement using a joint state goal ..."
     # raw_input()
-    tutorial.go_to_joint_state()
+    # tutorial.go_to_joint_state()
 
-    print "============ Press `Enter` to execute a movement using a pose goal ..."
-    raw_input()
-    tutorial.go_to_pose_goal()
+    # print "============ Press `Enter` to plan and display a Cartesian path ..."
+    # raw_input()
+    # cartesian_plan, fraction = tutorial.plan_cartesian_path()
 
-    print "============ Press `Enter` to plan and display a Cartesian path ..."
-    raw_input()
-    cartesian_plan, fraction = tutorial.plan_cartesian_path()
+    # print "============ Press `Enter` to display a saved trajectory (this will replay the Cartesian path)  ..."
+    # raw_input()
+    # tutorial.display_trajectory(cartesian_plan)
 
-    print "============ Press `Enter` to display a saved trajectory (this will replay the Cartesian path)  ..."
-    raw_input()
-    tutorial.display_trajectory(cartesian_plan)
-
-    print "============ Press `Enter` to execute a saved path ..."
-    raw_input()
-    tutorial.execute_plan(cartesian_plan)
+    # print "============ Press `Enter` to execute a saved path ..."
+    # raw_input()
+    # tutorial.execute_plan(cartesian_plan)
 
     # print "============ Press `Enter` to add a box to the planning scene ..."
     # raw_input()

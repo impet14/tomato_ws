@@ -84,30 +84,20 @@ class JointTrajectoryActionController():
         self.controller_namespace = controller_namespace
         self.joint_names = [c.joint_name for c in controllers]
 
-        print('joint_names', self.joint_names)
-
-        print('controllers: ',controllers)
-        
         self.joint_to_controller = {}
         for c in controllers:
             self.joint_to_controller[c.joint_name] = c
-        
-        print('joint_to_controller',self.joint_to_controller)
             
         self.port_to_joints = {}
         for c in controllers:
             if c.port_namespace not in self.port_to_joints: self.port_to_joints[c.port_namespace] = []
             self.port_to_joints[c.port_namespace].append(c.joint_name)
-        
-        print('port_to_joints',self.port_to_joints)
             
         self.port_to_io = {}
         for c in controllers:
             if c.port_namespace in self.port_to_io: continue
             self.port_to_io[c.port_namespace] = c.dxl_io
-        
-        print('port_to_io',self.port_to_io)
-            
+                    
         self.joint_states = dict(zip(self.joint_names, [c.joint_state for c in controllers]))
         self.num_joints = len(self.joint_names)
         self.joint_to_idx = dict(zip(self.joint_names, range(self.num_joints)))

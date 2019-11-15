@@ -1,0 +1,5 @@
+<launch>
+	<node name="hand_tracking" pkg="handtracking" type="detect_single_threaded_cam.py" output="screen" />
+	<!-- <node name="hand_detect" pkg="handtracking" type="hand_detect.py" output="screen" /> -->
+	<!-- <node name="hand_detect_sub" pkg="handtracking" type="hand_detect_sub.py" output="screen" /> -->
+</launch>

@@ -1,0 +1,9 @@
+<launch>
+
+<!--  start handeye camera-->
+  <!-- <include file="$(find handeye_cam)/launch/handeye.launch" /> -->
+
+  <node name="move_to_target" pkg="conbe_config" type="move_to_target.py" respawn="false" output="screen">
+  </node>
+
+</launch>

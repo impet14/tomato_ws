@@ -70,7 +70,7 @@ class SerialProxy():
                  baud_rate='1000000',
                  min_motor_id=1,
                  max_motor_id=25,
-                 update_rate=5,
+                 update_rate=100,
                  diagnostics_rate=1,
                  error_level_temp=75,
                  warn_level_temp=70,
