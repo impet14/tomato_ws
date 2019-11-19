@@ -58,4 +58,17 @@
     <arg name="moveit_warehouse_database_path" value="$(arg db_path)"/>
   </include>
 
+	<!--[5]  jog_control launch file-->
+	<arg name="use_action" default="false"/>
+	<arg name="intermittent" default="false"/>
+	<rosparam command="load" file="$(find jog_launch)/config/conbe_jog.yaml"/>
+	<node name="jog_joint_node" pkg="jog_controller" type="jog_joint_node">
+		<param name="use_action" value="$(arg use_action)"/>
+		<param name="intermittent" value="$(arg intermittent)"/>
+	</node>
+	<node name="jog_frame_node" pkg="jog_controller" type="jog_frame_node">
+		<param name="use_action" value="$(arg use_action)"/>
+		<param name="intermittent" value="$(arg intermittent)"/>
+	</node>
+
 </launch>

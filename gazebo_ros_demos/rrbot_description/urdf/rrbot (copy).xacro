@@ -7,8 +7,8 @@
   <xacro:property name="radian"    value="1.57079632679"/>
   <xacro:property name="mass"      value="1" /> <!-- arbitrary value for mass -->
   <xacro:property name="width"     value="0.05" /> <!-- Square dimensions (widthxwidth) of beams -->
-  <xacro:property name="height0"   value="0.275" /> <!-- Link 0 -->
-  <xacro:property name="height1"   value="0.036" /> <!-- Link 1 -->
+  <xacro:property name="height0"   value="0.260" /> <!-- Link 0 -->
+  <xacro:property name="height1"   value="0.043" /> <!-- Link 1 -->
   <xacro:property name="height2"   value="0.105" /> <!-- Link 2 -->
   <xacro:property name="height3"   value="0.043" /> <!-- Link 3 -->
   <xacro:property name="height4"   value="0.041" /> <!-- Link 4 -->
@@ -36,6 +36,7 @@
   <xacro:property name="camera_offsetY" value="-0.20" /> 
   <xacro:property name="camera_offsetZ" value="0.431" /> 
 
+  <xacro:property name="axel_offset" value="0" /> 
   <xacro:property name="axel_offset" value="0" /> 
 
   <xacro:macro name="default_inertial" params="mass">
@@ -160,7 +161,7 @@
   <joint name="joint2" type="revolute">
     <parent link="link2"/>
     <child link="link3"/>
-    <origin xyz="0 ${height2 - axel_offset} 0" rpy="${-radian} 0 0"/>
+    <origin xyz="0 ${height2 - axel_offset*2} 0" rpy="${-radian} 0 0"/>
     <limit lower="${LowerLim_roll}" upper="${UpperLim_roll}" effort="0" velocity="0"/>
     <axis xyz="0 0 1"/>
     <dynamics damping="${damp_value}"/>
@@ -196,7 +197,7 @@
   <joint name="joint3" type="revolute">
     <parent link="link3"/>
     <child link="link4"/>
-    <origin xyz="0 0 ${height3 - axel_offset}" rpy="${radian} 0 ${PI}"/>
+    <origin xyz="0 0 ${height3 - axel_offset*2}" rpy="${radian} 0 ${PI}"/>
     <limit lower="${LowerLim_joint3}" upper="${UpperLim_joint3}" effort="0" velocity="0"/>
     <axis xyz="0 0 1"/>
     <dynamics damping="${damp_value}"/>
@@ -232,7 +233,7 @@
   <joint name="joint4" type="revolute">
     <parent link="link4"/>
     <child link="link5"/>
-    <origin xyz="0 ${height4 - axel_offset} 0" rpy="${-radian} 0 0"/>
+    <origin xyz="0 ${height4 - axel_offset*2} 0" rpy="${-radian} 0 0"/>
     <limit lower="${LowerLim_roll}" upper="${UpperLim_roll}" effort="0" velocity="0"/>
     <axis xyz="0 0 1"/>
     <dynamics damping="${damp_value}"/>
@@ -310,24 +311,22 @@
   <!-- 7th EEF Link -->
   <link name="EEFlink">
     <collision>
-      <!-- <origin xyz="0 0 ${-heightEEF/2 - axel_offset}" rpy="0 0 0"/> -->
       <origin xyz="0 0 ${heightEEF/2 - axel_offset}" rpy="0 0 0"/>
       <geometry>
-	        <box size="${width} ${width} ${heightEEF}"/>
+	<box size="${width} ${width} ${heightEEF}"/>
       </geometry>
     </collision>
 
     <visual>
-      <!-- <origin xyz="0 0 ${-heightEEF/2 - axel_offset}" rpy="0 0 0"/> -->
       <origin xyz="0 0 ${heightEEF/2 - axel_offset}" rpy="0 0 0"/>
       <geometry>
-        	<box size="${width} ${width} ${heightEEF}"/>
+	<box size="${width} ${width} ${heightEEF}"/>
       </geometry>
-      <material name="red"/>
+      <material name="orange"/>
     </visual>
 
     <inertial>
-      <origin xyz="0 0 ${-heightEEF/2 - axel_offset}" rpy="0 0 0"/>
+      <origin xyz="0 0 ${heightEEF/2 - axel_offset}" rpy="0 0 0"/>
       <mass value="${mass}"/>
       <inertia
 	  ixx="${mass / 12.0 * (width*width + heightEEF*heightEEF)}" ixy="0.0" ixz="0.0"
@@ -335,6 +334,46 @@
 	  izz="${mass / 12.0 * (width*width + width*width)}"/>
     </inertial>
   </link>
+
+  <!-- End Effector -->
+  <!-- diagnal settting -->
+  <!-- <xacro:macro name="gripper" params="prefix reflect">
+    <joint name="${prefix}_gripper_joint" type="revolute">
+
+      <axis xyz="0 ${reflect} 0"/> 
+      <limit lower="${LowerLim_roll}" upper="${UpperLim_roll}" effort="0" velocity="0"/>
+      <origin rpy="0 0 ${PI}" xyz="${reflect*-0.03} 0 ${heightEEF}"/>
+      <parent link="EEFlink"/>
+      <child link="${prefix}_gripper"/>
+      <dynamics damping="${damp_value}" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}_gripper">
+      <visual>
+        <origin rpy="${(reflect-1)/2*pi} ${-radian} ${radian-PI}" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://urdf_tutorial/meshes/l_finger.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://urdf_tutorial/meshes/l_finger.dae"/>
+        </geometry>
+        <origin rpy="${(reflect-1)/2*pi} ${-radian} ${radian-PI}" xyz="0 0 0"/>
+      </collision>
+      <xacro:default_inertial mass="0.05"/>
+    </link>
+
+    <transmission name="${prefix}_gripper_trans" type="SimpleTransmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <actuator name="${prefix}_gripper_motor">
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+      <joint name="${prefix}_gripper_joint">
+        <hardwareInterface>PositionJointInterface</hardwareInterface>
+      </joint>
+    </transmission>    
+  </xacro:macro> -->
 
   <!--  pararell setting-->
   <xacro:macro name="gripper" params="prefix reflect">

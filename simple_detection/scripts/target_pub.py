@@ -5,6 +5,7 @@ import message_filters ### ADD THIS
 import rospy
 import numpy as np
 import math
+import glob
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -16,6 +17,8 @@ import argparse
 import datetime
 import sys
 from geometry_msgs.msg import PointStamped,Pose
+from utils import rs_process
+from utils import gui_creation
 
 #get intricsic of cam manually
 ############################################
@@ -52,7 +55,9 @@ if(not setting_isOK):
     print('*** Please set the correct instricsic')
     sys.exit()
 
+############################
 #get them from realsense api
+############################
 depth_scale = 0.0010000000474974513 #seems to be same in any resolution
 depth_intrin = rs.intrinsics()
 depth_intrin.width = rs_image_rgb.shape[1]
@@ -67,61 +72,6 @@ depth_intrin.model = rs.distortion.brown_conrady
 #target detect args
 enable_image_show = True
 enable_fps_show   = True
-
-#------realsense camera class
-class rs_process:
-    def __init__(self,resolution):
-        self.bridge = CvBridge()
-        image_align_hand_color = "/camera/color/image_rect_color"
-        image_align_hand_depth = "/camera/aligned_depth_to_color/image_raw"
-        self.image_sub = rospy.Subscriber(image_align_hand_color, Image, self.color_callback, queue_size=1)
-        self.image_sub = rospy.Subscriber(image_align_hand_depth, Image, self.depth_callback, queue_size=1)
-        self.isOK = False
-        self.depth_image = np.zeros((resolution['depth-w'],resolution['depth-h'],3), np.uint16)
-        self.rgb_image = np.zeros((resolution['rgb-w'],resolution['rgb-h'],3), np.uint8)
-        self.bgr_image = np.zeros((resolution['rgb-w'],resolution['rgb-h'],3), np.uint8)
-
-    def color_callback(self, data):
-        self.isOK = True
-        # print (data.encoding) #rgb8
-        try:
-            self.bgr_image = self.bridge.imgmsg_to_cv2(data, "passthrough")
-            self.rgb_image = cv2.cvtColor(self.bgr_image, cv2.COLOR_BGR2RGB)
-        except CvBridgeError as e:
-            print(e)
-    def depth_callback(self, data):
-        # print(data.encoding) #16uc1
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, "passthrough")
-        except CvBridgeError as e:
-            print(e)
-
-#------GUI class to create trackbar class
-class GUI():
-    def __init__(self,img_name,type_name,param_name_list,max_param,MIN,MAX):
-        self.img_name = str(img_name)
-        self.type_name = str(type_name)
-        self.argnum = len(param_name_list)
-        self.param_name_list = param_name_list
-        self.max_param = max_param
-        self.min = MIN
-        self.max = MAX
-    
-    def get_param_as_tuple(self):
-        return tuple(self.min),tuple(self.max)
-    
-    def changeColor(self,val):
-        for i in range(self.argnum):
-            self.min[i] = int(cv2.getTrackbarPos(self.type_name + self.param_name_list[i] + '_min', self.img_name))
-            self.max[i] = int(cv2.getTrackbarPos(self.type_name + self.param_name_list[i] + '_max', self.img_name))
-
-    def create_trackbar(self):
-        cv2.namedWindow(self.img_name, cv2.WINDOW_AUTOSIZE)
-        #create trackbar
-        for i in range(self.argnum):
-            cv2.createTrackbar(self.type_name + self.param_name_list[i] + '_min', self.img_name, self.min[i], self.max_param[i], self.changeColor)
-            cv2.createTrackbar(self.type_name + self.param_name_list[i] + '_max', self.img_name, self.max[i], self.max_param[i], self.changeColor)
-
 
 def applyFilter(img,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -141,23 +91,17 @@ def applyFilter(img,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX):
         return red_croped,croped
 
 def main():
-
-    #Marker Publisher Initialization
-    rsProcess = rs_process(camera_resolution)
     rospy.init_node('hand_tracking', anonymous=True)
     rospy.loginfo("--- Target Detection Start!")
 
-    #Marker Publisher Initialize
-    pub=rospy.Publisher('/target_marker', Marker,queue_size=1)
-    hand_mark = MarkerGenerator()
-    hand_mark.type = Marker.SPHERE_LIST
-    hand_mark.scale = [.03]*3
-    hand_mark.frame_id = '/camera_color_optical_frame'
+    #######################################
+    ##make new instance to subscribe image
+    #######################################
+    rsProcess = rs_process.rs_process(camera_resolution)
 
-    #time for fps calculation
-    start_time = datetime.datetime.now()
-    num_frames = 0
-
+    #############################################
+    ##Create GUI for hsv mask setting
+    #############################################
     #define the initial HSV param for mask1&2
     Lmask_MIN = np.array([0,50,20])
     Lmask_MAX = np.array([0,255,255])
@@ -166,22 +110,58 @@ def main():
     #the limit of H-channel is 180, others are 255
     hsv_max_param = np.array([180,255,255])
     hsv_param_name_list = ['H','S','V']
+    #load the param
+    rs_img_name = 'RS_SETTING'
+    type_name1 = 'mask1--'
+    type_name2 = 'mask2--'
+    if(len(glob.glob('./'+ rs_img_name + 'mask*.npy')) == 4):
+        Lmask_MIN = np.load('./' + rs_img_name + type_name1 + 'min.npy')
+        Lmask_MAX = np.load('./' + rs_img_name + type_name1 + 'max.npy')
+        Umask_MIN = np.load('./' + rs_img_name + type_name2 + 'min.npy')
+        Umask_MAX = np.load('./' + rs_img_name + type_name2 + 'max.npy')
+    else:
+        Lmask_MIN = np.array([0,101,144])
+        Lmask_MAX = np.array([7,255,240])
+        Umask_MIN = np.array([170,160,104])
+        Umask_MAX = np.array([180,255,206])
 
     #make instance to create trackbar
-    trackbar_mask1 = GUI('SETTING','mask1--',hsv_param_name_list,hsv_max_param,Lmask_MIN,Lmask_MAX)
-    trackbar_mask2 = GUI('SETTING','mask2--',hsv_param_name_list,hsv_max_param,Umask_MIN,Umask_MAX)
+    trackbar_mask1 = gui_creation.GUI(rs_img_name,type_name1,hsv_param_name_list,hsv_max_param,Lmask_MIN,Lmask_MAX)
+    trackbar_mask2 = gui_creation.GUI(rs_img_name,type_name2,hsv_param_name_list,hsv_max_param,Umask_MIN,Umask_MAX)
     trackbar_mask1.create_trackbar()
     trackbar_mask2.create_trackbar()
 
+    #############################################
+    ##Create GUI for depth setting
+    #############################################
     #define the initial depth param in CentiMeters
-    depth_MIN = np.array([47])
-    depth_MAX = np.array([100])
+    # depth_MIN = np.array([47])
+    # depth_MAX = np.array([100])
     #don't get the depth more than this
     depth_max_param = np.array([500])
-
     depth_param_name_list = ['DEPTH']
-    trackbar_depth = GUI('SETTING','dist[cm]',depth_param_name_list,depth_max_param,depth_MIN,depth_MAX)
+    #load the param
+    type_name = 'dist[cm]'
+    if(len(glob.glob('./'+ rs_img_name+ 'dist*.npy')) == 2):
+        depth_MIN = np.load('./' + rs_img_name + type_name + 'min.npy')
+        depth_MAX = np.load('./' + rs_img_name + type_name + 'max.npy')
+    else:
+        depth_MIN = np.array([47])
+        depth_MAX = np.array([100])
+    trackbar_depth = gui_creation.GUI(rs_img_name,type_name,depth_param_name_list,depth_max_param,depth_MIN,depth_MAX)
     trackbar_depth.create_trackbar()
+
+    #############################################
+    #Marker Publisher Initialization
+    #############################################
+    pub=rospy.Publisher('/target_marker', Marker,queue_size=1)
+    hand_mark = MarkerGenerator()
+    hand_mark.type = Marker.SPHERE_LIST
+    hand_mark.scale = [.03]*3
+    hand_mark.frame_id = '/camera_color_optical_frame'
+    #time for fps calculation
+    start_time = datetime.datetime.now()
+    num_frames = 0
 
     while not rospy.is_shutdown():
         #get rgb,depth frames for synchronized frames
@@ -194,7 +174,6 @@ def main():
         img_bgr = rsProcess.bgr_image
         img_rgb = rsProcess.rgb_image
         img_depth = rsProcess.depth_image
-
 
         ##Sometimes the depth.shape could be ((height,width,chnnel)) which are swapped(height<->width)
         if(not (img_bgr.shape[0] == img_depth.shape[0])):
@@ -212,7 +191,6 @@ def main():
 
         min_clipping_distance_in_meters = float(clipping_distance_in_centimeters[0][0]) / 100.0  #1 meter
         max_clipping_distance_in_meters = float(clipping_distance_in_centimeters[1][0]) / 100.0  #1 meter
-
 
         min_clipping_distance = min_clipping_distance_in_meters / depth_scale
         max_clipping_distance = max_clipping_distance_in_meters / depth_scale

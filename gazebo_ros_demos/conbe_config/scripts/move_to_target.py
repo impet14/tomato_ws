@@ -19,23 +19,22 @@ import dxl_move as DXL
 ######hand eye########
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-import handeye_detect as HandEye
+# import handeye_detect as HandEye
+import handeye_sub as HandEye
+import jog_move as JogMove
 
 
 def create_marker(axis):
     marker = Marker()
     marker.header.frame_id = 'link0'
     marker.header.stamp = rospy.Time.now()
-
     marker.ns = "visulize-eef-orientation"
     marker.id = 0 if(axis=='x') else 1 if(axis=='y')  else 2
     marker.action = Marker.ADD
-
     marker.color.r = 1.0 if(axis=='x') else 0.0
     marker.color.g = 1.0 if(axis=='y') else 0.0
     marker.color.b = 1.0 if(axis=='z') else 0.0
     marker.color.a = 1.0 
-
     marker.scale.x = 0.1
     marker.scale.y = 0.01
     marker.scale.z = 0.01
@@ -49,17 +48,14 @@ def set_marker_param(marker,axis,px,py,pz,quaternion):
     orientation =  {'x' :[0.0,0.0,0.0,1],
                     'y' :[0.0,0.0,0.7071068,0.707168],
                     'z' :[0.0,-0.7071068,0.0,0.7071068]}
-
     ###marker to visualize eef arrow
     marker.pose.position.x = px
     marker.pose.position.y = py
     marker.pose.position.z = pz
-
     #since the original arrow is along with x-axis,need to offset make it same as link0 frame.
     #after this, put the one
     link0_to_EEF = np.asarray(orientation[axis], dtype=np.float32)
     q_new = tf.transformations.quaternion_multiply(quaternion, link0_to_EEF)
-
     marker.pose.orientation.x=q_new[0]
     marker.pose.orientation.y=q_new[1]
     marker.pose.orientation.z=q_new[2]
@@ -81,7 +77,6 @@ def set_pre_position(q_orientation,px,py,pz,L):
 
     return pre_position
     
-
 def calc_orientation(px,py,pz,offset_z):
     yaw= math.atan2(py,px)
     z_offset = math.fabs(pz-offset_z)
@@ -110,9 +105,17 @@ def go_to_box(conbe_arm):
     joint_angle[5] = 1.95
     conbe_arm.go_to_joint_state(joint_angle)
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
 
+    ##########################################
+    ## create instance to control single motor
+    ##########################################
     eef_joint = DXL.DXL_CONTROL(control_joint='joint6_controller')
+
+
+    #########################################
+    ## create instance to control the arm
+    #########################################
     conbe_arm = MoveGroupIF.MoveGroupPythonIntefaceTutorial()
 
     ###################################
@@ -131,36 +134,44 @@ if __name__ == '__main__':
 
     ##################################
     ###create handeye detect instance
-    #################################
-    #define the initial HSV param for mask1&2
-    Lmask_MIN = np.array([0,101,144])
-    Lmask_MAX = np.array([7,255,240])
-    Umask_MIN = np.array([170,160,104])
-    Umask_MAX = np.array([180,255,206])
-    #make instance to create trackbar
-    handEyeFeedback = HandEye.ColorExtract(Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX,320,240)
+    ##################################
+    handeye_w = 640
+    handeye_h = 480
+    handEyeFeedback =HandEye.handeye(width=handeye_w,height=handeye_h)
+    
+    ################################
+    ####create jogging mode instance
+    ################################
+    frame_id = 'EEFlink'
+    group_name = 'conbe'
+    link_name = 'EEFlink'
+    linear_delta = 0.012
+    angular_delta = 0.01
+    jog = JogMove.jog_control(frame_id=frame_id,group_name=group_name,link_name=link_name,linear_delta=linear_delta,angular_delta=angular_delta)
 
+    #####################
+    ## MOVE :: READY POSE
+    #####################
     go_to_ready(conbe_arm)
     eef_joint.open()
-
-    # rospy.sleep(1)
-    # eef_joint.close()
 
     while not rospy.is_shutdown():
         try:
             print "============ Press `Enter` to go to the target position ..."
             raw_input()
 
-            #receive the target msg which is in target_frame
-            #get marker at least 5 times 
+            ###################################
+            ### MOVE :: First Approach 
+            ###################################
+            # #receive the target msg which is in target_frame
+            # #get marker at least 5 times ?? haven't implemented yet
+            
             target_msg = rospy.wait_for_message(target_marker_node, Marker)
             target_ref_link0_point = target_msg.points
 
-            px = target_ref_link0_point[0].x
-            py = target_ref_link0_point[0].y
-            pz = target_ref_link0_point[0].z 
-
-            # print('px,py,pz: ',px,py,pz)
+            px = target_ref_link0_point[0].x -0.015
+            py = target_ref_link0_point[0].y + 0.015
+            pz = target_ref_link0_point[0].z + 0.07 ##0.04 
 
             ## need to add pi to yaw rotation to offset from link0 coordination to eef coordination
             #This is fixed value of this robot
@@ -168,18 +179,16 @@ if __name__ == '__main__':
 
             ##offset_z is the offset value of Z-axiz. which decides the point to calculate
             #  the rotation of axis to decide the orientation of eef
-            #This will really affect to the solution of IK
+            ## This will directly affect to the solution of IK
             offset_z = 0.32 if(pz>0.34) else 0.37
             roll  =  0
-
             pitch,yaw = calc_orientation(px,py,pz,offset_z)
 
             ##Remember that the rotation will be done from Rot(z)*Rot(y)+Rot(x)
             arm_orientation = tf.transformations.quaternion_from_euler(roll,pitch,yaw+offset)
 
-
             #decide the preposition. this will be the destanse between eef and target along with Z-axis
-            L = 0.05
+            L = -0.01 #-0.005
             px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
 
             ox = arm_orientation[0]
@@ -191,56 +200,125 @@ if __name__ == '__main__':
             eef_markerY = set_marker_param(eef_markerY,'y',px,py,pz,arm_orientation)
             eef_markerX = set_marker_param(eef_markerX,'x',px,py,pz,arm_orientation)
 
-            pub.publish(eef_markerZ)
-            pub.publish(eef_markerY)
-            pub.publish(eef_markerX)
+            # pub.publish(eef_markerZ)
+            # pub.publish(eef_markerY)
+            # pub.publish(eef_markerX)
 
             #GO TO PRE GRIP POSITION 
-                ##CHECKING => GO TO NEXT ONLY WHEN SUCCESS
-            conbe_arm.go_to_pose_goal(px,py,pz,ox,oy,oz,ow)
-            print(handEyeFeedback.msg)
+            current_pose = conbe_arm.go_to_pose_goal(px,py,pz,ox,oy,oz,ow)
+            rospy.sleep(3)
 
-            rospy.sleep(1)
+            # print('GOAL POSITION: ',px,py,pz)
+            # print('EEF  POSITION: ',current_pose.position)
 
-            if(handEyeFeedback.msg['num'] > 3000):
-                eef_joint.close()
-                rospy.sleep(2)
+            x_error = px - current_pose.position.x 
+            y_error = py - current_pose.position.y 
+            z_error = pz - current_pose.position.z 
+            # print('x error: ', x_error)
+            # print('y error: ', y_error)
+            # print('z error: ', z_error)
 
+            #if the error is too big  : in case that the IK couldn't be calculated
+            if(math.sqrt(px**2 + py**2 + pz**2) > 0.15):
+                print('*********Cannot proceed to the next phase. Calculate again')
+                continue
 
+            #################################################
+            ## MOVE :: Tracking 
+            #################################################
 
+            thred = 200000
 
+            #### approach untill the handeye cam filled more than thredshod
+            # print(handEyeFeedback.w,handEyeFeedback.h,handEyeFeedback.num)
 
-            # go_to_box(conbe_arm)
+            w_location = handEyeFeedback.w - handeye_w/2
+            h_location = handEyeFeedback.h - handeye_h/2
 
-            # rospy.sleep(1)
+            #In case that the handeye-cam cannot see the target at all
+            ##############################
+            ## MOVE :: LOOK FOR THE TARGET
+            ##############################
+       
 
-            #GO BACK TO READY POSE
-            go_to_ready(conbe_arm)
+            #Handye cam detect the target 
+            ################################
+            ## MOVE :: APPROACH TO THE TARGET
+            ################################
 
-            continue
+            def adjust_h_w(h_loc,w_loc):
+                delta_h =  1.0 if (h_loc < 0 ) else 0 if (h_loc == -1) else -1.0
+                delta_w = -1.0 if (w_loc < 0 ) else 0 if (w_loc == -1) else  1.0
+                jog.set_linear_axis(x=delta_h,y=delta_w,z=0)
+                jog.move_with_linear_delta()
+                # jog.set_angular_axis(x=-delta_w,y=delta_h,z=0)
+                # jog.move_with_angular_delta()
+                rospy.sleep(0.5)
+                return (handEyeFeedback.h - handeye_h/2,handEyeFeedback.w - handeye_w/2)
+        
+            def adjust_z():
+                delta = 1.0
+                jog.set_linear_axis(x=0,y=0,z=delta)
+                jog.move_with_linear_delta()
+                rospy.sleep(0.5)
+                return (handEyeFeedback.h - handeye_h/2,handEyeFeedback.w - handeye_w/2)
+                        
+            range = 50
+            count = 1
 
-            ##TRACKING PROCESS
-                ##CHECKING => GO TO NEXT ONLY WHEN SUCCESS
+            try:
+                while(handEyeFeedback.num < thred):
+                    count += count * 0.1
+                    range += count
+                    H_state = bool(math.fabs(h_location) > handeye_h/range)
+                    W_state = bool(math.fabs(w_location) > handeye_w/range) 
+                    if(H_state and W_state):
+                        print('W-H-adjust: ',h_location,w_location)
+                        h_location, w_location = adjust_h_w(h_location,w_location)
+                    elif (H_state):
+                        ###Adjust height direction
+                        print('H_adjust: ',h_location)
+                        h_location, w_location = adjust_h_w(h_location,-1)
+                    elif (W_state):
+                        ###Adjust height direction
+                        print('W_adjust: ',w_location)
+                        h_location, w_location = adjust_h_w(-1,w_location)
+                    else:
+                        print('Z-adjust')
+                        ###approach to the target
+                        h_location, w_location = adjust_z()
+                    if(count > 10):
+                        print('Z-adjust')
+                        ###approach to the target
+                        h_location, w_location = adjust_z()  
+                    if(count > 50):
+                        break
+            except KeyboardInterrupt:
+                print 'interrupted!'
+                break
 
-            ##POOLING PROCESS
-                ##CHECKING => GO TO NEXT ONLY WHEN SUCCESS
-
-            ##PLACE TOMATO IN THE BOX
-                ##CHECKING => GO TO NEXT ONLY WHEN SUCCESS
-            
-            #GO BACK TO READY POSE
-            go_to_ready(conbe_arm)
-
+ 
+            rospy.sleep(2.0)
             eef_joint.close()
-            rospy.sleep(1)
+            rospy.sleep(2.0)
 
-            rospy.sleep(0.05)
-            go_to_box(conbe_arm)
-            eef_joint.open()
-            rospy.sleep(1)
+            ################################
+            ##MOVE :: GO TOBOX , GO TO READY
+            ################################
 
-            #GO BACK TO READY POSE
-            go_to_ready(conbe_arm)
+            ###if grab correctly 
+            if(handEyeFeedback.num > thred):
+                go_to_box(conbe_arm)
+                eef_joint.open()
+                rospy.sleep(1)
+                go_to_ready(conbe_arm)
+            else:
+                #GO BACK TO READY POSE
+                go_to_ready(conbe_arm)
+                eef_joint.open()
+            
+            print('continue')
+            continue
 
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):

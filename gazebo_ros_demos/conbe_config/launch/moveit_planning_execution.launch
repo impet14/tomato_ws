@@ -7,6 +7,7 @@
         - Update with joint names for your robot (in order expected by rbt controller)
         - and uncomment the following line: -->
     <rosparam command="load" file="$(find conbe_config)/config/joint_names.yaml"/>
+
     <!-- The planning and execution components of MoveIt! configured to 
     publish the current configuration of the robot (simulated or real)
     and the current state of the world as seen by the planner -->
@@ -14,6 +15,7 @@
     <include file="$(find conbe_config)/launch/move_group.launch">
     <arg name="publish_monitored_planning_scene" value="true" />
     </include>
+    
     <!-- The visualization component of MoveIt! -->
     <include file="$(find conbe_config)/launch/moveit_rviz.launch"/>
 

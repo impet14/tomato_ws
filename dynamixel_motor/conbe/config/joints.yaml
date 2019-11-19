@@ -20,7 +20,7 @@ joint0_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint0
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 10
         init: 512
@@ -51,7 +51,7 @@ joint1_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint1
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 11
         init: 512
@@ -64,7 +64,7 @@ joint1-2_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint1-2
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 12
         init: 538
@@ -77,7 +77,7 @@ joint2_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint2
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 13
         init: 512
@@ -90,7 +90,7 @@ joint3_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint3
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 14
         init: 512
@@ -103,7 +103,7 @@ joint4_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint4
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 15
         init: 512
@@ -116,7 +116,7 @@ joint5_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint5
-    joint_speed: 0.6
+    joint_speed: 0.8
     motor:
         id: 16
         init: 512
@@ -129,7 +129,7 @@ joint6_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint6
-    joint_speed: 0.6
+    joint_speed: 0.5
     motor:
         id: 17
         init: 512
