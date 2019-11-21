@@ -14,6 +14,8 @@
 #min, max <= minimun/maximum rotation the motor can do, it also follows the same rule as the previous parameters.
 
 
+
+
 joint0_controller:
     controller:
         package: dynamixel_controllers
@@ -29,47 +31,73 @@ joint0_controller:
 
 #Dual-position-controller
 # FOR MX-64AR
-# joint1_controller:
-#     controller:
-#         package: dynamixel_controllers
-#         module: joint_position_controller_dual_motor
-#         type: JointPositionControllerDual
-#     joint_name: j2_dual_motor
-#     joint_speed: 0.5
-#     motor_master:
-#         id: 1
-#         init: 2047
-#         min: 0
-#         max: 4095
-#     motor_slave:
-#         id: 2
-
-# FOR DX-117
 joint1_controller:
     controller:
         package: dynamixel_controllers
-        module: joint_position_controller
-        type: JointPositionController
+        module: joint_position_controller_dual_motor
+        type: JointPositionControllerDual
     joint_name: joint1
-    joint_speed: 0.8
-    motor:
+    joint_speed: 0.5
+    motor_master:
         id: 11
-        init: 512
+        init: 2047
         min: 0
-        max: 1023
-
-joint1-2_controller:
-    controller:
-        package: dynamixel_controllers
-        module: joint_position_controller
-        type: JointPositionController
-    joint_name: joint1-2
-    joint_speed: 0.8
-    motor:
+        max: 4095
+    motor_slave:
         id: 12
-        init: 538
-        min: 0
-        max: 1023 
+
+# joint1_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller
+#         type: JointPositionController
+#     joint_name: joint1
+#     joint_speed: 0.8
+#     motor:
+#         id: 11
+#         init: 2047
+#         min: 0
+#         max: 4095
+
+# joint1-2_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller
+#         type: JointPositionController
+#     joint_name: joint1-2
+#     joint_speed: 0.8
+#     motor:
+#         id: 12
+#         init: 2047
+#         min: 0
+#         max: 4095
+
+# FOR DX-117
+# joint1_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller
+#         type: JointPositionController
+#     joint_name: joint1
+#     joint_speed: 0.8
+#     motor:
+#         id: 11
+#         init: 512
+#         min: 0
+#         max: 1023
+
+# joint1-2_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller
+#         type: JointPositionController
+#     joint_name: joint1-2
+#     joint_speed: 0.8
+#     motor:
+#         id: 12
+#         init: 538
+#         min: 0
+#         max: 1023 
 
 joint2_controller:
     controller:

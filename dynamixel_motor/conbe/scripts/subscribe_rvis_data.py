@@ -13,13 +13,17 @@ class ReadRvis():
     def __init__(self,topic_name):
         self.sub_rvis_dist = '/' + topic_name
         self.prev_position = np.zeros(10)
-        self.arm = client_trajectory.Joint('conbe_controller')
+        self.arm = client_trajectory.Joint('conbe')
         # rospy.init_node('simulator_control', anonymous=True)
-        self.arm.move([0.0,0.0,0.0,0.0,0.0,0.0,0.0]) #use only 0~6
+        self.arm.move([0.0,0.0,0.0,0.0,0.0,0.0]) #use only 0~5
+        self.sub =  rospy.Subscriber('/joint_states', JointState_rvis, self.callback,queue_size=10)
+        self.r  = rospy.Rate(20)
+        rospy.spin()
+
         
-    def transform_callback(self,data):
+    def callback(self,data):
         # print(data)
-        for i in range(7):
+        for i in range(6):
             COMMAND_FLAG = False
             if(fabs(self.prev_position[i]-data.position[i]) > 0.01):
                 print(data)
@@ -28,17 +32,12 @@ class ReadRvis():
                 COMMAND_FLAG = True
             if(COMMAND_FLAG):
                 #move arm with the value in slidebar
-                self.arm.move(data.position[:7]) #use only 0~6
+                self.arm.move(data.position[:6]) #use only 0~6
             self.prev_position[i] = data.position[i]
+        self.r.sleep()
 
-    def read(self):
-        rospy.Subscriber(self.sub_rvis_dist, JointState_rvis, self.transform_callback)
-        rospy.spin()
+        
 
 if __name__ == '__main__':
-    try:
-        rvis_subscriber = ReadRvis('joint_states')
-        rvis_subscriber.read()
-
-    except rospy.ROSInterruptException:
-        pass
+ 
+    rvis_subscriber = ReadRvis('joint_states')

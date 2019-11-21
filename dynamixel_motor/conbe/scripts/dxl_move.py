@@ -13,43 +13,54 @@ class DXL_CONTROL():
         self.pub = rospy.Publisher(self.pub_dist,Float64,queue_size=10)
         self.goal_pos = 0
         self.max_load = max_load
+        self._error = 100
+        self._is_moving = True
+        rospy.init_node(self.node_name, anonymous=True)
+        rospy.Subscriber(self.sub_dist, JointState, self.transform_callback)
 
     def transform_callback(self,data):
-        # rospy.loginfo(rospy.get_name() + ': Target angle {0}'.format(self.goal_pos))
-        # rospy.loginfo(rospy.get_name() + ': Goal         {0} [rad]'.format(data.goal_pos))
-        # rospy.loginfo(rospy.get_name() + ': position     {0} [rad]'.format(data.current_pos))
-        # rospy.loginfo(rospy.get_name() + ': velocity     {0} [rad/s]'.format(data.velocity))
-        # rospy.loginfo(rospy.get_name() + ': Load         {0}'.format(data.load))
-        # rospy.loginfo(rospy.get_name() + ': Moving       {0}'.format(data.is_moving))
-        # rospy.loginfo(rospy.get_name() + ': Error        {0}'.format(data.error))
+        rospy.loginfo(rospy.get_name() + ': Target angle {0}'.format(self.goal_pos))
+        rospy.loginfo(rospy.get_name() + ': Goal         {0} [rad]'.format(data.goal_pos))
+        rospy.loginfo(rospy.get_name() + ': position     {0} [rad]'.format(data.current_pos))
+        rospy.loginfo(rospy.get_name() + ': velocity     {0} [rad/s]'.format(data.velocity))
+        rospy.loginfo(rospy.get_name() + ': Load         {0}'.format(data.load))
+        rospy.loginfo(rospy.get_name() + ': Moving       {0}'.format(data.is_moving))
+        rospy.loginfo(rospy.get_name() + ': Error        {0}'.format(data.error))
+
+        self._error = data.error
+        self._is_moving = data.is_moving
 
         # If the motor has reached its limit, publish a new command.
-        if fabs(data.load) > self.max_load:
-            self.goal_pos = data.current_pos
-            self.pub.publish(Float64(self.goal_pos))
+        # if fabs(data.load) > self.max_load:
+            # self.goal_pos = data.current_pos
+            # self.pub.publish(Float64(self.goal_pos))
 
-            str = "goal pos was changed: Time: {0} Moving motor to {1}" .format(rospy.get_time(), self.goal_pos)
-            rospy.loginfo(str)
+        #     str = "goal pos was changed: Time: {0} Moving motor to {1}" .format(rospy.get_time(), self.goal_pos)
+        #     rospy.loginfo(str)
 
-        str = "reached to GOAL: Time: {0} Moving motor to {1}" .format(rospy.get_time(), self.goal_pos)
-        rospy.loginfo(str)
+        # str = "reached to GOAL: Time: {0} Moving motor to {1}" .format(rospy.get_time(), self.goal_pos)
+        # rospy.loginfo(str)
             
 
     def open(self):
         self.goal_pos = 1.5
-        rospy.init_node(self.node_name, anonymous=True)
-        rospy.Subscriber(self.sub_dist, JointState, self.transform_callback)
         # Initial movement.
         self.pub.publish(Float64(self.goal_pos))
-        rospy.sleep(2)
+        while (fabs(self._error) > 0.003):
+            print('error--', self._error)
+            rospy.sleep(0.8)
+            if(not self._is_moving):
+                break
 
     def close(self):
-        self.goal_pos = -0.5
-        rospy.init_node(self.node_name, anonymous=True)
-        rospy.Subscriber(self.sub_dist, JointState, self.transform_callback)
+        self.goal_pos = -1.5
         # Initial movement.
         self.pub.publish(Float64(self.goal_pos))
-        rospy.sleep(2)
+        while (fabs(self._error) > 0.003):
+            print('error--', self._error)
+            rospy.sleep(0.8)
+            if(not self._is_moving):
+                break
 
 
 if __name__ == '__main__':

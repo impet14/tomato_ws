@@ -1,6 +1,5 @@
 #!/usr/bin/env python  
 import roslib
-# import roslib; roslib.load_manifest('easy_markers')
 from easy_markers.generator import *
 import rospy
 import tf
@@ -19,8 +18,8 @@ if __name__ == '__main__':
     print("waiting for  --/target_maker-- message")
 
     #frame to transform
-    reference_frame = "/link0"                        ####FROM
-    target_frame    = "/camera_color_optical_frame"   ######TO
+    target_frame    = "/camera_color_optical_frame"   ######FROM
+    reference_frame = "/link0"                        ####TO
 
     #Marker Publisher Initialize
     marker_pub = rospy.Publisher("/target_marker_link0_frame", Marker, queue_size=10)
@@ -37,8 +36,6 @@ if __name__ == '__main__':
             #receive the target msg which is in target_frame
             target_msg = rospy.wait_for_message(target_marker_node, Marker)
             target_point = target_msg.points
-
-            # rospy.sleep(0.5)
 
             #transform position from target_frame to reference frame
             target_ref_camera=PointStamped()

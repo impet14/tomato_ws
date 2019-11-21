@@ -1,9 +1,7 @@
 <launch>
-
+  <rosparam command="load" file="$(find simple_detection)/config/realsense_config.yaml"/>
   <node name="target_pub" pkg="simple_detection" type="target_pub.py" respawn="true" cwd="node" output="screen">
   </node> 
-
-   <node name="camera_tf_listener" pkg="simple_detection" type="camera_tf_listener.py" respawn="true" output="screen">
+  <node name="camera_tf_listener" pkg="simple_detection" type="camera_tf_listener.py" respawn="true" output="screen">
   </node>
-
 </launch>

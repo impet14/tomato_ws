@@ -36,25 +36,18 @@ class Joint:
         #     char = self.name[0] #either 'f' or 'b'
 
         #     goal.trajectory.joint_names = ['j1_single_motor', 'j2_dual_motor', 'j3_single_motor', 'j4_single_motor', 'j5_single_motor','j6_single_motor', 'j7_single_motor']
-            goal.trajectory.joint_names = ['joint0', 'joint1-1', 'joint1-2', 'joint2', 'joint3', 'joint4','joint5', 'joint6']
+            goal.trajectory.joint_names = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4','joint5']
             point = JointTrajectoryPoint()
             apply_angles = list(angles)
 
             #since the joint1-1 & joint1-2 have to move to the same direction but the rotational direction is opposite, 
             #copy the value for id:11 and insert the value * -1 for the id:12
-            apply_angles.insert(2,-1*angles[1])
+            # apply_angles.insert(2,-1*angles[1])
 
             point.positions = apply_angles
+            print('apply_angles      :   ',apply_angles)
             print('current positions:    ',point.positions)
 
             point.time_from_start = rospy.Duration(3)
             goal.trajectory.points.append(point)
             self.jta.send_goal_and_wait(goal)
-
-if __name__ == '__main__':
-#     rvis_subscriber = rvis_data.ReadRvis('joint_states')
-#     rvis_subscriber.read()
-
-    arm = Joint('f_arm')
-    # arm.move([0.0,0.5,0.0,0.0,0.0,0.0,0.0])
-    arm.move([0.0,0.0,0.0,0.0,0.0,0.0,0.0])

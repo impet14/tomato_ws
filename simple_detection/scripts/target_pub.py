@@ -29,8 +29,12 @@ from utils import gui_creation
 # camera_resolution = {   'rgb-w':1280,   'rgb-h':720,
 #                        'depth-w':1280,'depth-h':720 }
 #use rs_rgbd_w360.launch
-camera_resolution = {   'rgb-w':640,   'rgb-h':360,
-                       'depth-w':640,'depth-h':360 }
+depth_w = int(rospy.get_param('/depth_width'))
+depth_h = int(rospy.get_param('/depth_height'))
+color_w = int(rospy.get_param('/color_width'))
+color_h = int(rospy.get_param('/color_height'))
+camera_resolution = {   'rgb-w':color_w,   'rgb-h':color_h,
+                       'depth-w':depth_w,'depth-h':depth_h }
 
 rs_image_rgb = np.zeros((camera_resolution['rgb-w'],camera_resolution['rgb-h'],3), np.uint8)
 rs_image_depth = np.zeros((camera_resolution['depth-w'],camera_resolution['depth-h'],3), np.uint16)

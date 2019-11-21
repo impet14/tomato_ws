@@ -13,23 +13,36 @@ class DXL_CONTROL():
         self.current_pos = 0 
         self.target_pos = 0
         self.load = 0
-
-    def open(self):
-        self.goal_pos = 0.34
-        self.pub.publish(Float64(self.goal_pos))
-        while (fabs(self.current_pos - self.target_pos) > 0.01):
-            rospy.sleep(0.1)
-
-    def close(self):
-        self.goal_pos = -1.46
-        self.pub.publish(Float64(self.goal_pos))
-        while (fabs(self.current_pos - self.target_pos) > 0.01):
-            rospy.sleep(0.1)   
+        self._goal_pos = 0
+        self._error = 0
     
+    def set_goal_pos(self,goal):
+        self._goal_pos = goal
+
+    def move(self):
+        self.pub.publish(Float64(self._goal_pos))
+        rospy.sleep(0.5)
+        while (fabs(self._error) > 0.003):
+            print('error--', self._error)
+            rospy.sleep(0.8)
+            if(not self._is_moving):
+                break
+    
+    def move_to_goal(self,goal):
+        self.set_goal_pos(goal)
+        self.move()
+    
+    def move_with_delta(self,delta):
+        self.set_goal_pos(self._current_pos + delta)
+        self.move()
+
     def callback(self,data):
-        self.target_pos    = data.goal_pos
-        self.current_pos = data.current_pos
-        self.load        = data.load
+        self._target_pos  = data.goal_pos
+        self._current_pos = data.current_pos
+        self._error       = data.error
+        self._velocity       = data.velocity
+        self._is_moving   = data.is_moving
+        self._load        = data.load
         # rospy.loginfo(rospy.get_name() + ': Target angle {0}'.format(self.goal_pos))
         # rospy.loginfo(rospy.get_name() + ': Goal         {0} [rad]'.format(data.goal_pos))
         # rospy.loginfo(rospy.get_name() + ': position     {0} [rad]'.format(data.current_pos))
