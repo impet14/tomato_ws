@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!-- Revolute-Revolute Manipulator -->
+<robot name="rrbot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <material name="black_x">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="orange_x">
+    <color rgba="${255/255} ${108/255} ${10/255} 1.0"/>
+  </material>
+
+  <material name="red_x">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+
+  <xacro:macro name="joint_link_macro" params="prefix joint_name joint_type LowerLim UpperLim parent child width height color mass Jx Jy Jz Jroll Jpitch Jyaw Lx Ly Lz Lroll Lpitch Lyaw">
+
+    <joint name="${prefix}${joint_name}" type="${joint_type}">
+
+      <xacro:if value="${parent=='world'}">
+        <parent link="${parent}"/>
+      </xacro:if>
+      <xacro:if value="${parent!='world'}">
+        <parent link="${prefix}${parent}"/>
+      </xacro:if>
+      
+      <child link="${prefix}${child}"/>
+      <origin xyz="${Jx} ${Jy} ${Jz}" rpy="${Jroll} ${Jpitch} ${Jyaw}"/>
+
+      <xacro:if value="${joint_type=='revolute'}">
+        <limit lower="${LowerLim}" upper="${UpperLim}" effort="0" velocity="0"/>
+        <axis xyz="0 0 1"/>
+        <dynamics damping="0.0" />
+      </xacro:if>
+
+    </joint>
+
+    <link name="${prefix}${child}">
+      <collision>
+        <origin xyz="${Lx} ${Ly} ${Lz}" rpy="${Lroll} ${Lpitch} ${Lyaw}"/>
+        <geometry>
+          <box size="${width} ${width} ${height}"/>
+        </geometry>
+      </collision>
+      <visual>
+        <origin xyz="${Lx} ${Ly} ${Lz}" rpy="${Lroll} ${Lpitch} ${Lyaw}"/>
+        <geometry>
+          <box size="${width} ${width} ${height}"/>
+        </geometry>
+        <xacro:if value="${color=='black'}">
+          <material name="black_x"/>
+        </xacro:if>
+        <xacro:if value="${color=='orange'}">
+          <material name="orange_x"/>
+        </xacro:if>
+        <xacro:if value="${color=='red'}">
+          <material name="red_x"/>
+        </xacro:if>
+      </visual>
+      <inertial>
+        <mass value="${mass}" />
+        <inertia
+        ixx="${mass} / 12.0 * (${width}*${width} + ${height}*${height})" ixy="0.0" ixz="0.0"
+        iyy="${mass} / 12.0 * (${height}*${height} + ${width}*${width})" iyz="0.0"
+        izz="${mass} / 12.0 * (${width}*${width} + ${width}*${width})"/>
+      </inertial>
+    </link>
+
+  </xacro:macro>  
+</robot>

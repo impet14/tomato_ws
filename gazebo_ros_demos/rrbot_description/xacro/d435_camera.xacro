@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!-- Revolute-Revolute Manipulator -->
+<robot name="rrbot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+ <xacro:macro name="camera_macro" params="camera_offsetX camera_offsetY camera_offsetZ PI">
+    <joint name="camerabase_joint" type="fixed">
+      <parent link="world"/>
+      <child link="D435base_link"/>
+      <origin xyz="${camera_offsetX} ${camera_offsetY} 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="D435base_link">
+      <collision>
+        <origin xyz="0 0 ${(camera_offsetZ-0.012)/2}" rpy="0 0 0"/>
+        <geometry>
+    <cylinder length="${camera_offsetZ-0.012}" radius="0.01"/>
+        </geometry>
+      </collision>
+
+      <visual>
+        <origin xyz="0 0 ${(camera_offsetZ-0.012)/2}" rpy="0 0 0"/>
+        <geometry>
+    <cylinder length="${camera_offsetZ-0.012}" radius="0.02"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.0 0.0 0.0 1.0"/>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="D435joint" type="fixed">
+      <parent link="D435base_link"/>
+      <child link="D435_link"/>
+      <origin xyz="0 0 ${camera_offsetZ}" rpy="${PI/2} 0 ${PI/2}"/>
+    </joint>
+
+    <link name="D435_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0.012"/>
+        <geometry>
+          <mesh filename="package://realsense2_description/meshes/d435.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://realsense2_description/meshes/d435.dae"/>
+        </geometry>
+        <origin rpy="0 0 0" xyz="0 0 0.012"/>
+      </collision>
+      <inertial>
+        <mass value="1.0" />
+        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+      </inertial>
+    </link>
+
+    </xacro:macro>  
+</robot>

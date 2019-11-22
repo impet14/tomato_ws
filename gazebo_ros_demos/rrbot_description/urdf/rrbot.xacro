@@ -32,8 +32,9 @@
 
   <xacro:property name="damp_value"  value="0.0" /> <!-- Link 6 -->
 
+ <!--  camera reference from link0-->
   <xacro:property name="camera_offsetX" value="-0.42" /> 
-  <xacro:property name="camera_offsetY" value="-0.20" /> 
+  <xacro:property name="camera_offsetY" value="-0.182" /> 
   <xacro:property name="camera_offsetZ" value="0.431" /> 
 
   <xacro:property name="axel_offset" value="0" /> 
