@@ -19,7 +19,7 @@
     <!-- The visualization component of MoveIt! -->
     <include file="$(find conbe_config)/launch/moveit_rviz.launch"/>
 
-    <!-- Locate the D435 RGBD camera -->
-    <!-- <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="-0.42 -0.20 0.431 0 0 0 /world /camera_link 100" /> -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="-0.42 -0.205 0.431 0 0 0 /world /camera_link 100" /> -->
+    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="-0.42 -0.21 0.431 0 0 0 /world /camera_link 100" />
 
 </launch>

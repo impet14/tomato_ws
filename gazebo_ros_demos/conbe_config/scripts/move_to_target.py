@@ -174,8 +174,12 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
         try:
-            print "============ Press `Enter` to go to the target position ..."
-            raw_input()
+            go_to_ready(conbe_arm)
+            rospy.sleep(0.5)
+            go_to_ready(conbe_arm)
+
+            print "============ Start to go to the target position ..."
+            # raw_input()
 
             # print('=========arduino test=========')
             # print('start-R')
@@ -202,19 +206,40 @@ if __name__ == '__main__':
             #     pitch_joint5.move_with_delta(delta)
             # break
 
-
             ###################################
             ### MOVE :: First Approach 
             ###################################
             # #receive the target msg which is in target_frame
             # #get marker at least 5 times ?? haven't implemented yet
+            rospy.wait_for_message(target_marker_node, Marker)
+            px = -1
+            offset_z = 0.07
+            while px < 0.01 : 
+                target_msg = rospy.wait_for_message(target_marker_node, Marker)
+                px = target_msg.points[0].x
+                rospy.sleep(0.5) 
             
-            target_msg = rospy.wait_for_message(target_marker_node, Marker)
-            target_ref_link0_point = target_msg.points
+            error = 100        
+            cnt_err = 0  
+            tmp_pz = 0
+            while cnt_err < 5:
+                target_msg = rospy.wait_for_message(target_marker_node, Marker)
+                
+                if (math.fabs(tmp_pz - target_msg.points[0].z) > 0.015):
+                    cnt = 0
 
+                tmp_pz = target_msg.points[0].z
+                cnt_err+=1
+                rospy.sleep(0.1)
+            
+            target_ref_link0_point = target_msg.points
             px = target_ref_link0_point[0].x
-            py = target_ref_link0_point[0].y + 0.015
-            pz = target_ref_link0_point[0].z + 0.07 ##0.04 
+            py = target_ref_link0_point[0].y 
+            pz = target_ref_link0_point[0].z + offset_z ##0.04 
+            rospy.sleep(0.5) 
+                
+
+
 
             ##############################################
             ##
@@ -231,7 +256,8 @@ if __name__ == '__main__':
             ##offset_z is the offset value of Z-axiz. which decides the point to calculate
             #  the rotation of axis to decide the orientation of eef
             ## This will directly affect to the solution of IK
-            offset_z = 0.32 if(pz>0.34) else 0.37
+            # offset_z = 0.32 if(pz>0.34) else 0.37
+            offset_z = 0.32 if(pz>0.34) else 0.47
             roll  =  0
             pitch,yaw = calc_orientation(px,py,pz,offset_z)
 
@@ -239,7 +265,7 @@ if __name__ == '__main__':
             arm_orientation = tf.transformations.quaternion_from_euler(roll,pitch,yaw+offset)
 
             #decide the preposition. this will be the destanse between eef and target along with Z-axis
-            L = -0.02 #-0.005
+            L = -0.05 #-0.005
             px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
 
             ox = arm_orientation[0]
@@ -256,9 +282,12 @@ if __name__ == '__main__':
             # pub.publish(eef_markerX)
 
             #GO TO PRE GRIP POSITION 
-            current_pose = conbe_arm.go_to_pose_goal(px,py,pz,ox,oy,oz,ow)
-            rospy.sleep(3)
-
+            print ('going to tomato')
+            conbe_arm.go_to_pose_goal(px,py,pz,ox,oy,oz,ow)
+            rospy.sleep(1)
+            current_pose = conbe_arm.get_current_pose()
+            print ('target current pose')
+            print (current_pose)
             # print('GOAL POSITION: ',px,py,pz)
             # print('EEF  POSITION: ',current_pose.position)
 
@@ -269,23 +298,43 @@ if __name__ == '__main__':
             print('y error: ', y_error)
             print('z error: ', z_error)
 
+            # compensating hand error before gripping
+            conbe_arm.go_to_pose_goal(px,py,pz+z_error-offset_z,ox,oy,oz,ow)
+            rospy.sleep(1)
+            
+            # conbe_arm.go_to_pose_goal(px,py,pz+z_error-offset_z,ox,oy,oz,ow)
+
+            current_pose = conbe_arm.get_current_pose()
+            print ('compenstated current pose')
+            print (current_pose)
+            # print('GOAL POSITION: ',px,py,pz)
+            # print('EEF  POSITION: ',current_pose.position)
+
+            x_error = px - current_pose.position.x 
+            y_error = py - current_pose.position.y 
+            z_error = pz - current_pose.position.z 
+            print('x error: ', x_error)
+            print('y error: ', y_error)
+            print('z error: ', z_error)
             #if the error is too big  : in case that the IK couldn't be calculated
 
-            if(x_error**2 + y_error**2 + z_error**2 > 0.1):
-                print('*****calculation did not succeed')
-    
+            if(math.sqrt(x_error**2 + y_error**2 + z_error**2) > 0.15 and handEyeFeedback.num < 1000):
+                print('*****calculation did not succeed ')
+                print(math.sqrt(x_error**2 + y_error**2 + z_error**2))
+                continue
 
-            print "============ Press `Enter` to go to go back to ready position ..."
-            raw_input()
 
-            go_to_ready(conbe_arm)
-            continue
+            # print "============ Press `Enter` to go to go back to ready position ..."
+            # raw_input()
+
+            # go_to_ready(conbe_arm)
+            # continue
 
             #################################################
             ## MOVE :: Tracking 
             #################################################
 
-            thred = 200000
+            thred = 220000
 
             #### approach untill the handeye cam filled more than thredshod
             # print(handEyeFeedback.w,handEyeFeedback.h,handEyeFeedback.num)
@@ -297,8 +346,8 @@ if __name__ == '__main__':
             ##############################
             ## MOVE :: LOOK FOR THE TARGET
             ##############################
-       
 
+            
             #Handye cam detect the target 
             ################################
             ## MOVE :: APPROACH TO THE TARGET
@@ -313,49 +362,11 @@ if __name__ == '__main__':
                 rospy.sleep(0.5)
                 return (handEyeFeedback.h - handeye_h/2,handEyeFeedback.w - handeye_w/2)
         
-            def adjust_z():
-                delta = 1.0
+            def adjust_z(delta):
                 jog.set_linear_axis(x=0,y=0,z=delta)
                 jog.move_with_linear_delta()
                 rospy.sleep(0.5)
-                # return (handEyeFeedback.h - handeye_h/2,handEyeFeedback.w - handeye_w/2)
-            # use_jot_control = False
 
-            # if(use_jot_control):
-                            
-            #     range = 50
-            #     count = 1
-
-            #     try:
-            #         while(handEyeFeedback.num < thred):
-            #             count += count * 0.1
-            #             range += count
-            #             H_state = bool(math.fabs(h_location) > handeye_h/range)
-            #             W_state = bool(math.fabs(w_location) > handeye_w/range) 
-            #             if(H_state and W_state):
-            #                 print('W-H-adjust: ',h_location,w_location)
-            #                 h_location, w_location = adjust_h_w(h_location,w_location)
-            #             elif (H_state):
-            #                 ###Adjust height direction
-            #                 print('H_adjust: ',h_location)
-            #                 h_location, w_location = adjust_h_w(h_location,-1)
-            #             elif (W_state):
-            #                 ###Adjust height direction
-            #                 print('W_adjust: ',w_location)
-            #                 h_location, w_location = adjust_h_w(-1,w_location)
-            #             else:
-            #                 print('Z-adjust')
-            #                 ###approach to the target
-            #                 h_location, w_location = adjust_z()
-            #             if(count > 10):
-            #                 print('Z-adjust')
-            #                 ###approach to the target
-            #                 h_location, w_location = adjust_z()  
-            #             if(count > 50):
-            #                 break
-            #     except KeyboardInterrupt:
-            #         print 'interrupted!'
-            #         break
 
 
             ##look for the target
@@ -393,9 +404,13 @@ if __name__ == '__main__':
                 H_isOK = check_if_H_isOK()
 
                 if(H_isOK):
-                    print('Z-adjust')   
-                    ###approach to the target
-                    adjust_z()
+                    print('Z-adjust') 
+                    if(handEyeFeedback.num < (thred - 100000) ):
+                        delta = 3.0
+                    else:
+                        ###approach to the target
+                        delta = 2.5
+                    adjust_z(delta)
 
                 else:
 
@@ -451,13 +466,15 @@ if __name__ == '__main__':
 
 
                             
-            print('grab-target')
+            print('*****grab-target')
             rospy.sleep(2.0)
             eef_close(eef_joint)
             rospy.sleep(2.0)
 
             print('grab correctly')
             go_to_box(conbe_arm)
+            # rospy.sleep(1.0)
+            # go_to_box(conbe_arm)
             eef_open(eef_joint)
             rospy.sleep(2.0)
             go_to_ready(conbe_arm)

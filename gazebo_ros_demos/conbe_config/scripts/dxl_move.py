@@ -22,10 +22,12 @@ class DXL_CONTROL():
     def move(self):
         self.pub.publish(Float64(self._goal_pos))
         rospy.sleep(0.5)
+        count = 0
         while (fabs(self._error) > 0.003):
+            count += 1
             print('error--', self._error)
             rospy.sleep(0.8)
-            if(not self._is_moving):
+            if(not self._is_moving or count > 20):
                 break
     
     def move_to_goal(self,goal):

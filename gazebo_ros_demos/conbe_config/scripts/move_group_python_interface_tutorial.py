@@ -190,7 +190,6 @@ class MoveGroupPythonIntefaceTutorial(object):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
-    move_group = self.move_group
 
     ## BEGIN_SUB_TUTORIAL plan_to_pose
     ##
@@ -207,27 +206,29 @@ class MoveGroupPythonIntefaceTutorial(object):
     pose_goal.position.y = py
     pose_goal.position.z = pz
 
-    move_group.set_pose_target(pose_goal)
+    self.move_group.set_pose_target(pose_goal)
 
     ## Now, we call the planner to compute the plan and execute it.
-    plan = move_group.go(wait=True)
-
+    plan = self.move_group.go(wait=True)
+    print plan
     # Calling `stop()` ensures that there is no residual movement
-    move_group.stop()
+    self.move_group.stop()
     # It is always good to clear your targets after planning with poses.
     # Note: there is no equivalent function for clear_joint_value_targets()
-    move_group.clear_pose_targets()
+    self.move_group.clear_pose_targets()
 
     ## END_SUB_TUTORIAL
 
     # For testing:
     # Note that since this section of code will not be included in the tutorials
     # we use the class variable rather than the copied state variable
-    current_pose = self.move_group.get_current_pose().pose
+    # current_pose = self.move_group.get_current_pose().pose
 
     # return all_close(pose_goal, current_pose, 0.01)
-    return current_pose
+    # return current_pose
 
+  def get_current_pose(self):
+    return self.move_group.get_current_pose().pose
 
   def plan_cartesian_path(self, scale=1):
     # Copy class variables to local variables to make the web tutorials more clear.
