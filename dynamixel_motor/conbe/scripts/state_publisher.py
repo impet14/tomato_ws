@@ -19,7 +19,8 @@ joints = ["joint0","joint1","joint2","joint3","joint4","joint5","joint6"]
 #Hence offset is required to match the URDF and the real robot.
 #Offset for motor id [10,11,13,14,15,16,17] is specified in the list.
 start_ID = 10
-offset = [512,512,512,512,512,512,512]
+# offset = [512,512,512,512,512,512,512]
+offset = [512,2047,512,512,512,512,512]
 
 '''
 Function: process(). Callback for subscriber of raw data from dynamixel motor. 
@@ -45,8 +46,12 @@ def process(msg):
 					joint_states.name.append(joints[x.id-start_ID-1])
 					joint_states.position.append((x.position-offset[x.id-start_ID-1])*(300.0/1023)*(pi/180))
 			else:
+				resolution = 1023 if(offset[1] == 512) else 4095 if(offset[1] == 2047) else 0
+				if (resolution==0): 
+					print('please check the offset value of pkg:dynamixelmotor node:state_publisher.py')
+					break
 				joint_states.name.append(joints[x.id-start_ID])
-				joint_states.position.append((x.position-offset[x.id-start_ID])*(300.0/1023)*(pi/180))
+				joint_states.position.append((x.position-offset[x.id-start_ID])*(300.0/resolution)*(pi/180))
 
 		#joint_states.velocity.append(x.velocity)
 	

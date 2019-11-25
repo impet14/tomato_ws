@@ -109,7 +109,8 @@ def eef_open(eef):
     eef.move_to_goal(0.34)
 
 def eef_close(eef):
-    eef.move_to_goal(-1.46)
+    # eef.move_to_goal(-1.46)
+    eef.move_to_goal(-0.60) #right arm
 
 if __name__ == '__main__': 
 
@@ -324,6 +325,15 @@ if __name__ == '__main__':
                 continue
 
 
+            print('*****grab-target')
+            rospy.sleep(2.0)
+            eef_close(eef_joint)
+            rospy.sleep(2.0)
+
+            print('grab correctly')
+            go_to_box(conbe_arm)
+
+            break
             # print "============ Press `Enter` to go to go back to ready position ..."
             # raw_input()
 
@@ -334,7 +344,7 @@ if __name__ == '__main__':
             ## MOVE :: Tracking 
             #################################################
 
-            thred = 220000
+            thred = 200000
 
             #### approach untill the handeye cam filled more than thredshod
             # print(handEyeFeedback.w,handEyeFeedback.h,handEyeFeedback.num)
@@ -368,6 +378,7 @@ if __name__ == '__main__':
                 rospy.sleep(0.5)
 
 
+            print('handeyeFD.num = ',handEyeFeedback.num)
 
             ##look for the target
             if(handEyeFeedback.num == 0):
@@ -380,6 +391,7 @@ if __name__ == '__main__':
 
                     #in case that the handeye recognaizes the target
                     if(handEyeFeedback.num != 0):
+                        print('handEyeFeedback is ok')
                         handeye_recognition_isOK = True
                         break
             else:
