@@ -1,6 +1,5 @@
 
 <launch>
-
     <!-- Non-standard joint names:
         - Create a file <robot_moveit_dir>/config/joint_names.yaml
             controller_joint_names: [joint_1, joint_2, ... joint_N] 

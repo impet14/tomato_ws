@@ -17,12 +17,12 @@
 
   <!-- upper limit of the angle -->
   <xacro:property name="UpperLim_roll"  value="2.617" /> 
-  <xacro:property name="UpperLim_joint1"  value="1.46239" /> 
+  <xacro:property name="UpperLim_joint1"  value="2.00644" /> 
   <xacro:property name="UpperLim_joint3"  value="2.26006" /> 
   <xacro:property name="UpperLim_joint5"  value="1.958382" /> 
 
   <xacro:property name="LowerLim_roll"  value= "-2.617" /> 
-  <xacro:property name="LowerLim_joint1"  value="-1.8816" /> 
+  <xacro:property name="LowerLim_joint1"  value="-1.8699" /> 
   <xacro:property name="LowerLim_joint3"  value="-1.7385" /> 
   <xacro:property name="LowerLim_joint5"  value="-1.677152" /> 
 
@@ -50,7 +50,7 @@
   <!-- ****************************************************************************** -->
   <!--  LEFT ARM DESCRIPTION -->
   <!-- ****************************************************************************** -->
-  <xacro:joint_link_macro 
+  <!-- <xacro:joint_link_macro 
     prefix="" joint_name="fixed" joint_type="fixed" LowerLim="None" UpperLim="None"
     parent="world" child="link0" 
     width="${width}" height="${height0}" color="black" mass="1.0" 
@@ -107,13 +107,13 @@
     Lx="0" Ly="0" Lz="${heightEEF/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:gripper prefix="" parent="EEFlink" parent_height="${heightEEF}" LorR="left" reflect="1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
-  <xacro:gripper prefix="" parent="EEFlink" parent_height="${heightEEF}" LorR="right" reflect="-1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
+  <xacro:gripper prefix="" parent="EEFlink" parent_height="${heightEEF}" LorR="right" reflect="-1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/> -->
 
   <!-- ****************************************************************************** -->
   <!--  RIGHT ARM DESCRIPTION -->
   <!-- ****************************************************************************** -->
 
-  <!-- <xacro:joint_link_macro 
+  <xacro:joint_link_macro 
     prefix="R" joint_name="fixed" joint_type="fixed" LowerLim="None" UpperLim="None"
     parent="world" child="link0" 
     width="${width}" height="${height0}" color="black" mass="1.0" 
@@ -170,7 +170,7 @@
     Lx="0" Ly="0" Lz="${heightEEF/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:gripper prefix="R" parent="EEFlink" parent_height="${heightEEF}" LorR="left" reflect="1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
-  <xacro:gripper prefix="R" parent="EEFlink" parent_height="${heightEEF}" LorR="Right" reflect="-1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/> -->
+  <xacro:gripper prefix="R" parent="EEFlink" parent_height="${heightEEF}" LorR="right" reflect="-1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
 
 
 

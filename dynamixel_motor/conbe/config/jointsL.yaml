@@ -1,0 +1,165 @@
+#MX-64AR resolution : 4096 [pulse/rev]
+# Angle : 360
+# so it varies from o to 4095. 
+
+#DX-117 resolution : 0.29[deg] = 1024 [pulse/rev]
+# Angle : 300
+# so it varies from 0 to 1023
+
+# init <= This parameter is realted to the joint initial position, hence init. 
+#         Since a full rotation is 360 degrees, 
+#         setting init: 1023 (for MX-64AR) / 310 (for DX-117) would leave the initial state of the motor 90 degrees from the orifinal reference 0
+#         setting init: 1365 (for MX-64AR) / 413 (for DX-117) would leave the initial state of the motor 120 degrees from the orifinal reference 0
+#         setting init: 2047 (for MX-64AR) / 620 (for DX-117) would leave the initial state of the motor 180 degrees from the orifinal reference 0
+#min, max <= minimun/maximum rotation the motor can do, it also follows the same rule as the previous parameters.
+
+
+joint0_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint0
+    joint_speed: 1.0
+    motor:
+        id: 10
+        init: 512
+        min: 0
+        max: 1023
+
+#Dual-position-controller
+# FOR MX-64AR
+# joint1_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller_dual_motor
+#         type: JointPositionControllerDual
+#     joint_name: joint1
+#     joint_speed: 0.5
+#     motor_master:
+#         id: 11
+#         init: 2047
+#         min: 0
+#         max: 4095
+#     motor_slave:
+#         id: 12
+
+# joint1_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller
+#         type: JointPositionController
+#     joint_name: joint1
+#     joint_speed: 0.9
+#     motor:
+#         id: 12
+#         init: 2047
+#         min: 0
+#         max: 4095
+
+# joint1-2_controller:
+#     controller:
+#         package: dynamixel_controllers
+#         module: joint_position_controller
+#         type: JointPositionController
+#     joint_name: joint1
+#     joint_speed: 0.9
+#     motor:
+#         id: 12
+#         init: 2047
+#         min: 0
+#         max: 4095
+
+
+# FOR DX-117
+joint1_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint1
+    joint_speed: 1.0
+    motor:
+        id: 11
+        init: 512
+        min: 0
+        max: 1023
+
+joint1-2_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint1-2
+    joint_speed: 1.0
+    motor:
+        id: 12
+        init: 538
+        min: 0
+        max: 1023 
+
+joint2_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint2
+    joint_speed: 1.0
+    motor:
+        id: 13
+        init: 512
+        min: 0
+        max: 1023
+
+joint3_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint3
+    joint_speed: 1.0
+    motor:
+        id: 14
+        init: 512
+        min: 0
+        max: 1023
+
+joint4_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint4
+    joint_speed: 1.0
+    motor:
+        id: 15
+        init: 512
+        min: 0
+        max: 1023
+
+joint5_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint5
+    joint_speed: 1.0
+    motor:
+        id: 16
+        init: 512
+        min: 0
+        max: 1023
+
+joint6_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: joint6
+    joint_speed: 0.7
+    motor:
+        id: 17
+        init: 512
+        min: 0
+        max: 1023
+        

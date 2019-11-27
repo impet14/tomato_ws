@@ -15,7 +15,7 @@
 
 	<!--[2]  start joint state publisher-->
 	<param name="robot_description"
-		command="$(find xacro)/xacro --inorder '$(find rrbot_description)/urdf/rrbot.xacro'" />
+		command="$(find xacro)/xacro --inorder '$(find rrbot_description)/urdf/rrbot_v2.xacro'" />
 
 	<node name="State_Publisher" pkg="conbe" type="state_publisher.py" /> 
 	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
@@ -66,7 +66,12 @@
 	<!--[4] moveit launch file -->
   	<include file="$(find conbe_config)/launch/moveit_planning_execution.launch" />
 
-	<!--[5]  jog_control launch file-->
+	
+	<!--[5]  connect arduino as a node-->
+  	<include file="$(find rosserial_python)/launch/serial_node.launch" />
+
+
+	<!--[6]  jog_control launch file-->
 	<arg name="use_action" default="false"/>
 	<arg name="intermittent" default="false"/>
 	<rosparam command="load" file="$(find jog_launch)/config/conbe_jog.yaml"/>

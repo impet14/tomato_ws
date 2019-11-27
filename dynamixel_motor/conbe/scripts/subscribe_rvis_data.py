@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+]#!/usr/bin/env python
 
 import rospy
 import numpy as np
@@ -13,7 +13,7 @@ class ReadRvis():
     def __init__(self,topic_name):
         self.sub_rvis_dist = '/' + topic_name
         self.prev_position = np.zeros(10)
-        self.arm = client_trajectory.Joint('conbe')
+        self.arm = client_trajectory.Joint('/conbe_controller')
         # rospy.init_node('simulator_control', anonymous=True)
         self.arm.move([0.0,0.0,0.0,0.0,0.0,0.0]) #use only 0~5
         self.sub =  rospy.Subscriber('/joint_states', JointState_rvis, self.callback,queue_size=10)

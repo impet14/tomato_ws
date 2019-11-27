@@ -64,8 +64,8 @@ def process(msg):
 	pub.publish(joint_states)
 
 # Subscriber for raw feedback from dynamixel motor. Position of the motor will be in the range of (0,1023).
-sub = rospy.Subscriber('/motor_states/conbe_L_port',MotorStateList,process)
+sub = rospy.Subscriber('/motor_states/conbe_R_port',MotorStateList,process)
 # Publisher for the current position of dynamixel motor in radian
-pub = rospy.Publisher('/conbe/joint_states',JointState,queue_size=10)
+pub = rospy.Publisher('/conbeR/joint_states',JointState,queue_size=10)
 
 rospy.spin()

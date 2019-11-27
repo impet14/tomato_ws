@@ -5,20 +5,16 @@ from math import pi
 import math
 import tf
 import cv2
-import moveit_commander
-import moveit_msgs.msg
 import geometry_msgs.msg
 from std_msgs.msg      import String
 from std_msgs.msg      import UInt16
 from geometry_msgs.msg import Quaternion
 from cv_bridge         import CvBridge, CvBridgeError
-from moveit_commander.conversions import pose_to_list
 from visualization_msgs.msg       import Marker
-##import custom class
-import move_group_python_interface_tutorial as MoveGroupIF
-import dxl_move as DXL
-import handeye_sub as HandEye
-import jog_move as JogMove
+from utils import dxl_move as DXL
+from utils import handeye_sub as HandEye
+from utils import conbe_ik as CONBE
+from utils import client_trajectory
 
 def create_marker(axis):
     marker = Marker()
@@ -87,7 +83,7 @@ def go_to_ready(conbe_arm):
     joint_angle[3] = 1.237
     joint_angle[4] = 0
     joint_angle[5] = 1.4214
-    conbe_arm.go_to_joint_state(joint_angle)
+    conbe_arm.move(joint_angle)
 
 def go_to_box(conbe_arm):
     joint_angle = np.empty(6)
@@ -97,16 +93,19 @@ def go_to_box(conbe_arm):
     joint_angle[3] = 0.4244
     joint_angle[4] = 0
     joint_angle[5] = 1.95
-    conbe_arm.go_to_joint_state(joint_angle)
+    conbe_arm.move(joint_angle)
 
 def dolly_mode_interpreter(command):
-    return 100 if (command == 'start-R') else 200 if(command == 'start-L') else 0
-
-# def arm_look_for(joint,delta):
-#     joint.move_with_delta(delta)
+    if(command == 49):
+        print('stop')
+    elif(command < 49):
+        print('left')
+    else:
+        print('right')
 
 def eef_open(eef):
-    eef.move_to_goal(0.34)
+    eef.move_to_goal(0.20)
+    # eef.move_to_goal(0.34)
 
 def eef_close(eef):
     # eef.move_to_goal(-1.46)
@@ -115,17 +114,35 @@ def eef_close(eef):
 if __name__ == '__main__': 
 
     ##########################################
+    ## create instancd to calculate IK
+    ##########################################
+    pos_bound = [0.01,0.01,0.01]
+    ori_bound = [0.1,0.1,0.1]
+
+    conbeL_ik   = CONBE.ConbeIK(urdf_param='/LArm/robot_description',LorR='L',pos_bound=pos_bound,ori_bound=ori_bound)
+    conbeL_ik.check_setting()
+
+    conbeR_ik   = CONBE.ConbeIK(urdf_param='/RArm/robot_description',LorR='R',pos_bound=pos_bound,ori_bound=ori_bound)
+    conbeR_ik.check_setting()
+
+    ##########################################
     ## create instance to control single motor
     ##########################################
-    eef_joint = DXL.DXL_CONTROL(control_joint='joint6_controller')
-    roll_joint0  = DXL.DXL_CONTROL(control_joint='joint0_controller') 
-    pitch_joint3 = DXL.DXL_CONTROL(control_joint='joint3_controller')
-    pitch_joint5 = DXL.DXL_CONTROL(control_joint='joint5_controller')
+    eef_joint_L = DXL.DXL_CONTROL(control_joint='/LArm/joint6_controller')
+    roll_joint0_L  = DXL.DXL_CONTROL(control_joint='/LArm/joint0_controller') 
+    pitch_joint3_L = DXL.DXL_CONTROL(control_joint='/LArm/joint3_controller')
+    pitch_joint5_L = DXL.DXL_CONTROL(control_joint='/LArm/joint5_controller')
+
+    eef_joint_R = DXL.DXL_CONTROL(control_joint='/RArm/joint6_controller')
+    roll_joint0_R  = DXL.DXL_CONTROL(control_joint='/RArm/joint0_controller') 
+    pitch_joint3_R = DXL.DXL_CONTROL(control_joint='/RArm/joint3_controller')
+    pitch_joint5_R = DXL.DXL_CONTROL(control_joint='/RArm/joint5_controller')
 
     #########################################
-    ## create instance to control the arm
+    ## create instance to control the arm using FollowJointTrajectory
     #########################################
-    conbe_arm = MoveGroupIF.MoveGroupPythonIntefaceTutorial()
+    conbeL_arm = client_trajectory.Joint('LArm/conbeL_controller') 
+    conbeR_arm = client_trajectory.Joint('RArm/conbeR_controller') 
 
     ###################################
     # Publisher
@@ -157,26 +174,39 @@ if __name__ == '__main__':
     handeye_h = 480
     handEyeFeedback =HandEye.handeye(width=handeye_w,height=handeye_h)
     
-    ################################
-    ####create jogging mode instance
-    ################################
-    frame_id = 'EEFlink'
-    group_name = 'conbe'
-    link_name = 'EEFlink'
-    linear_delta = 0.012
-    angular_delta = 0.01
-    jog = JogMove.jog_control(frame_id=frame_id,group_name=group_name,link_name=link_name,linear_delta=linear_delta,angular_delta=angular_delta)
-
-    #####################
+    
+    ## start
     ## MOVE :: READY POSE
-    #####################
-    go_to_ready(conbe_arm)
-    eef_open(eef_joint)
-    rospy.sleep(0.1)
-    eef_open(eef_joint)
+    
+    go_to_ready(conbeR_arm)
+    go_to_ready(conbeL_arm)
+
+    eef_open(eef_joint_L)
+    rospy.sleep(1)
+    eef_open(eef_joint_R)
 
     while not rospy.is_shutdown():
         try:
+            print('start main loop')
+
+            print('stop')
+            dolly_pub.publish(49)
+            rospy.sleep(1)
+            print('left')
+            dolly_pub.publish(30)
+            rospy.sleep(1)
+            print('stop')
+            dolly_pub.publish(49)
+            rospy.sleep(1)
+            print('right')
+            dolly_pub.publish(68)
+            rospy.sleep(1)
+            print('stop')
+            dolly_pub.publish(49)
+            rospy.sleep(1)
+
+            break
+
 
             ####################################
             ## Wait until the target position
@@ -184,6 +214,7 @@ if __name__ == '__main__':
             ####################################
             # #receive the target msg which is in target_frame
             # #get marker at least 5 times ?? haven't implemented yet
+
             rospy.wait_for_message(target_marker_node, Marker)
             px = -1
             offset_z = 0.07
@@ -206,6 +237,7 @@ if __name__ == '__main__':
                 rospy.sleep(0.1)
             
             #target point ref link0 frame
+            print('get target*****')
             target_ref_link0_point = target_msg.points
             px = target_ref_link0_point[0].x
             py = target_ref_link0_point[0].y 
@@ -216,40 +248,40 @@ if __name__ == '__main__':
             ## DORRY MOVE
             ####################################
 
-            print('py : ', py)
+            # print('py : ', py)
 
-            if(py > 0.3):
-                print('start-L')
-                dolly_pub.publish(dolly_mode_interpreter('start-L'))
-                rospy.sleep(3)
-                dolly_pub.publish(dolly_mode_interpreter('stop'))
-                rospy.sleep(0.1)
-                continue
-            elif(0.3 >= py > 0.1):
-                print('start-L')
-                dolly_pub.publish(dolly_mode_interpreter('start-L'))
-                rospy.sleep(1)
-                dolly_pub.publish(dolly_mode_interpreter('stop'))
-                rospy.sleep(0.1)
-                continue
-            elif(0.1 >= py >= -0.1):
-                print('stop')
-                dolly_pub.publish(dolly_mode_interpreter('stop'))
-                rospy.sleep(1)
-            elif(-0.1 > py >= -0.3):
-                print('start-R')
-                dolly_pub.publish(dolly_mode_interpreter('start-R'))
-                rospy.sleep(1)
-                dolly_pub.publish(dolly_mode_interpreter('stop'))
-                rospy.sleep(0.1)
-                continue
-            else:
-                print('start-R')
-                dolly_pub.publish(dolly_mode_interpreter('start-R'))
-                rospy.sleep(3)
-                dolly_pub.publish(dolly_mode_interpreter('stop'))
-                rospy.sleep(0.1)
-                continue
+            # if(py > 0.3):
+            #     print('start-L')
+            #     dolly_pub.publish(dolly_mode_interpreter('start-L'))
+            #     rospy.sleep(3)
+            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
+            #     rospy.sleep(0.1)
+            #     continue
+            # elif(0.3 >= py > 0.1):
+            #     print('start-L')
+            #     dolly_pub.publish(dolly_mode_interpreter('start-L'))
+            #     rospy.sleep(1)
+            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
+            #     rospy.sleep(0.1)
+            #     continue
+            # elif(0.1 >= py >= -0.1):
+            #     print('stop')
+            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
+            #     rospy.sleep(1)
+            # elif(-0.1 > py >= -0.3):
+            #     print('start-R')
+            #     dolly_pub.publish(dolly_mode_interpreter('start-R'))
+            #     rospy.sleep(1)
+            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
+            #     rospy.sleep(0.1)
+            #     continue
+            # else:
+            #     print('start-R')
+            #     dolly_pub.publish(dolly_mode_interpreter('start-R'))
+            #     rospy.sleep(3)
+            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
+            #     rospy.sleep(0.1)
+            #     continue
 
             ##############################################
             ##
@@ -280,12 +312,15 @@ if __name__ == '__main__':
 
             #decide the preposition. this will be the destanse between eef and target along with Z-axis
             L = -0.05 #-0.005
-            px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
+            # px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
 
-            ox = arm_orientation[0]
-            oy = arm_orientation[1]
-            oz = arm_orientation[2]
-            ow = arm_orientation[3]
+            # ox = arm_orientation[0]
+            # oy = arm_orientation[1]
+            # oz = arm_orientation[2]
+            # ow = arm_orientation[3]
+
+            pos = set_pre_position(arm_orientation,px,py,pz,L)
+            ori = arm_orientation
 
             eef_markerZ = set_marker_param(eef_markerZ,'z',px,py,pz,arm_orientation)
             eef_markerY = set_marker_param(eef_markerY,'y',px,py,pz,arm_orientation)
@@ -296,40 +331,46 @@ if __name__ == '__main__':
             # pub.publish(eef_markerX)
 
             #GO TO PRE GRIP POSITION 
-            print ('going to tomato')
-            conbe_arm.go_to_pose_goal(px,py,pz,ox,oy,oz,ow)
+            print ('calculate IK*****')
+            Langles = conbeL_ik.calculate(pos,ori)
+            if(Langles == None):
+                print('calculation wasnot succeed')
+                break
+            conbeL_arm.move(Langles)
+
             rospy.sleep(1)
-            current_pose = conbe_arm.get_current_pose()
-            print ('target current pose')
-            print (current_pose)
+
+            go_to_ready(conbeL_arm)
+
+            break
+            # current_pose = conbe_arm.get_current_pose()
+            # print ('target current pose')
+            # print (current_pose)
             # print('GOAL POSITION: ',px,py,pz)
             # print('EEF  POSITION: ',current_pose.position)
 
-            x_error = px - current_pose.position.x 
-            y_error = py - current_pose.position.y 
-            z_error = pz - current_pose.position.z 
-            print('x error: ', x_error)
-            print('y error: ', y_error)
-            print('z error: ', z_error)
+            # x_error = px - current_pose.position.x 
+            # y_error = py - current_pose.position.y 
+            # z_error = pz - current_pose.position.z 
+            # print('x error: ', x_error)
+            # print('y error: ', y_error)
+            # print('z error: ', z_error)
 
-            # compensating hand error before gripping
-            conbe_arm.go_to_pose_goal(px,py,pz+z_error-offset_z,ox,oy,oz,ow)
-            rospy.sleep(1)
+            # # compensating hand error before gripping
+            # conbeL_arm.move(px,py,pz+z_error-offset_z,ox,oy,oz,ow)
+            # rospy.sleep(1)
             
-            # conbe_arm.go_to_pose_goal(px,py,pz+z_error-offset_z,ox,oy,oz,ow)
 
-            current_pose = conbe_arm.get_current_pose()
-            print ('compenstated current pose')
-            print (current_pose)
-            # print('GOAL POSITION: ',px,py,pz)
-            # print('EEF  POSITION: ',current_pose.position)
+            # current_pose = conbeL_arm.get_current_pose()
+            # print ('compenstated current pose')
+            # print (current_pose)
 
-            x_error = px - current_pose.position.x 
-            y_error = py - current_pose.position.y 
-            z_error = pz - current_pose.position.z 
-            print('x error: ', x_error)
-            print('y error: ', y_error)
-            print('z error: ', z_error)
+            # x_error = px - current_pose.position.x 
+            # y_error = py - current_pose.position.y 
+            # z_error = pz - current_pose.position.z 
+            # print('x error: ', x_error)
+            # print('y error: ', y_error)
+            # print('z error: ', z_error)
             #if the error is too big  : in case that the IK couldn't be calculated
 
             if(math.sqrt(x_error**2 + y_error**2 + z_error**2) > 0.15 and handEyeFeedback.num < 300):
@@ -476,18 +517,16 @@ if __name__ == '__main__':
 
             print('*****grab-target')
             rospy.sleep(2.0)
-            eef_close(eef_joint)
+            eef_close(eef_joint_L)
             rospy.sleep(2.0)
 
             print('grab correctly')
-            go_to_box(conbe_arm)
-            # rospy.sleep(1.0)
-            # go_to_box(conbe_arm)
-            eef_open(eef_joint)
+            go_to_box(conbeL_arm)
+            eef_open(eef_joint_L)
             rospy.sleep(2.0)
-            go_to_ready(conbe_arm)
+            go_to_ready(conbeL_arm)
             rospy.sleep(2.0)
-            go_to_ready(conbe_arm)
+            go_to_ready(conbeL_arm)
 
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):

@@ -1,0 +1,6 @@
+<launch>
+  <group ns='LArm'>
+  <param name="robot_description"
+    command="$(find xacro)/xacro --inorder '$(find rrbot_description)/urdf/rrbot_v2.xacro'" />
+  </group>
+</launch>

@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     #frame to transform
     target_frame    = "/camera_color_optical_frame"   ######FROM
-    reference_frame = "/link0"                        ####TO
+    reference_frame = "/Llink0"                        ####TO
 
     #Marker Publisher Initialize
     marker_pub = rospy.Publisher("/target_marker_link0_frame", Marker, queue_size=10)

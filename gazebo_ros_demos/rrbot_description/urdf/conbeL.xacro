@@ -51,63 +51,63 @@
   <!--  LEFT ARM DESCRIPTION -->
   <!-- ****************************************************************************** -->
   <xacro:joint_link_macro 
-    prefix="" joint_name="fixed" joint_type="fixed" LowerLim="None" UpperLim="None"
+    prefix="L" joint_name="fixed" joint_type="fixed" LowerLim="None" UpperLim="None"
     parent="world" child="link0" 
     width="${width}" height="${height0}" color="black" mass="1.0" 
     Jx="0" Jy="0" Jz="0" Jroll="0" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="0" Lz="${height0/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="joint0" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
+    prefix="L" joint_name="joint0" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
     parent="link0" child="link1" 
     width="${width}" height="${height1}" color="orange" mass="1.0" 
     Jx="0" Jy="0" Jz="${height0}" Jroll="0" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="0" Lz="${height1/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="joint1" joint_type="revolute" LowerLim="${LowerLim_joint1}" UpperLim="${UpperLim_joint1}"
+    prefix="L" joint_name="joint1" joint_type="revolute" LowerLim="${LowerLim_joint1}" UpperLim="${UpperLim_joint1}"
     parent="link1" child="link2" 
     width="${width}" height="${height2}" color="black" mass="1.0" 
     Jx="0" Jy="0" Jz="${height1}" Jroll="${PI/2}" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="${height2/2}" Lz="0" Lroll="${PI/2}" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="joint2" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
+    prefix="L" joint_name="joint2" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
     parent="link2" child="link3" 
     width="${width}" height="${height3}" color="orange" mass="1.0" 
     Jx="0" Jy="${height2}" Jz="0" Jroll="${-PI/2}" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="0" Lz="${height3/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="joint3" joint_type="revolute" LowerLim="${LowerLim_joint3}" UpperLim="${UpperLim_joint3}"
+    prefix="L" joint_name="joint3" joint_type="revolute" LowerLim="${LowerLim_joint3}" UpperLim="${UpperLim_joint3}"
     parent="link3" child="link4" 
     width="${width}" height="${height4}" color="black" mass="1.0" 
     Jx="0" Jy="0" Jz="${height3}" Jroll="${PI/2}" Jpitch="0" Jyaw="${PI}" 
     Lx="0" Ly="${height4/2}" Lz="0" Lroll="${-PI/2}" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="joint4" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
+    prefix="L" joint_name="joint4" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
     parent="link4" child="link5" 
     width="${width}" height="${height5}" color="orange" mass="1.0" 
     Jx="0" Jy="${height4}" Jz="0" Jroll="${-PI/2}" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="0" Lz="${height5/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="joint5" joint_type="revolute" LowerLim="${LowerLim_joint5}" UpperLim="${UpperLim_joint5}"
+    prefix="L" joint_name="joint5" joint_type="revolute" LowerLim="${LowerLim_joint5}" UpperLim="${UpperLim_joint5}"
     parent="link5" child="link6" 
     width="${width}" height="${height6}" color="black" mass="1.0" 
     Jx="0" Jy="0" Jz="${height5}" Jroll="${PI/2}" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="${height6/2}" Lz="0" Lroll="${-PI/2}" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="" joint_name="EEFjoint" joint_type="fixed" LowerLim="None" UpperLim="None"
+    prefix="L" joint_name="EEFjoint" joint_type="fixed" LowerLim="None" UpperLim="None"
     parent="link6" child="EEFlink" 
     width="${width}" height="${heightEEF}" color="red" mass="1.0" 
     Jx="0" Jy="${height6}" Jz="0" Jroll="${-PI/2}" Jpitch="0" Jyaw="0" 
     Lx="0" Ly="0" Lz="${heightEEF/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
-  <xacro:gripper prefix="" parent="EEFlink" parent_height="${heightEEF}" LorR="left" reflect="1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
-  <xacro:gripper prefix="" parent="EEFlink" parent_height="${heightEEF}" LorR="right" reflect="-1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
+  <xacro:gripper prefix="L" parent="EEFlink" parent_height="${heightEEF}" LorR="left" reflect="1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
+  <xacro:gripper prefix="L" parent="EEFlink" parent_height="${heightEEF}" LorR="right" reflect="-1" LowerLim_roll="${LowerLim_roll}"  UpperLim_roll="${UpperLim_roll}" PI="${PI}"/>
 
   <!-- ****************************************************************************** -->
   <!--  RIGHT ARM DESCRIPTION -->
