@@ -1,6 +1,0 @@
-servo_controller_names:
-  - shoulder_revolute_servo_controller
-  - shoulder_flex_servo_controller
-  - elbow_servo_controller
-  - wrist_servo_controller
-  - finger_servo_controller
