@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import rosparam
 from sensor_msgs.msg import JointState
 from dynamixel_msgs.msg import MotorState
 from dynamixel_msgs.msg import MotorStateList
@@ -12,7 +13,6 @@ rospy.init_node('State_Publisher')
 # Name of the joints in the robotic arm
 # Name of motor ID [1,2,3,4,5,6] is specified in the list.
 joints = ["joint0","joint1","joint2","joint3","joint4","joint5","joint6"]
-# joints = ["joint0","joint1-1","joint1-2","joint2","joint3","joint4","joint5","joint6"]
 
 #Dynamixel Motors will not be in Position 0 when switched ON. Dynamixel motors will have some initial position value. 
 #In the URDF it is assumed that initial joint value is 0 radian. 
@@ -20,7 +20,18 @@ joints = ["joint0","joint1","joint2","joint3","joint4","joint5","joint6"]
 #Offset for motor id [10,11,13,14,15,16,17] is specified in the list.
 start_ID = 10
 # offset = [512,512,512,512,512,512,512]
-offset = [512,2047,512,512,512,512,512]
+j0_init = rosparam.get_param("/RArm/joint0_controller/motor/init")
+j1_init = rosparam.get_param("/RArm/joint1_controller/motor_master/init")
+j2_init = rosparam.get_param("/RArm/joint2_controller/motor/init")
+j3_init = rosparam.get_param("/RArm/joint3_controller/motor/init")
+j4_init = rosparam.get_param("/RArm/joint4_controller/motor/init")
+j5_init = rosparam.get_param("/RArm/joint5_controller/motor/init")
+j6_init = rosparam.get_param("/RArm/joint6_controller/motor/init")
+
+offset = [j0_init,j1_init,j2_init,j3_init,j4_init,j5_init,j6_init]
+print('R: ',offset)
+
+# offset = [512,2047,512,512,512,512,512]
 
 '''
 Function: process(). Callback for subscriber of raw data from dynamixel motor. 

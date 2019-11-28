@@ -32,7 +32,7 @@
   <xacro:property name="camera_offsetZ" value="0.431" /> 
 
  <!--  R-arm reference from link0 -->
-  <xacro:property name="RArm_offsetY" value="-0.551" /> 
+  <xacro:property name="RArm_offsetY" value="-0.6501" /> 
 
   <!-- Import all Gazebo-customization elements, including Gazebo colors -->
   <xacro:include filename="$(find rrbot_description)/urdf/rrbot.gazebo" />

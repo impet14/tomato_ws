@@ -75,6 +75,16 @@ def calc_orientation(px,py,pz,offset_z):
     pitch = Beta - pi/2 if(pz-offset_z > 0) else - Beta - pi/2
     return pitch,yaw
 
+def init_pose(conbe_arm):
+    joint_angle = np.empty(6)
+    joint_angle[0] = 0
+    joint_angle[1] = 0
+    joint_angle[2] = 0
+    joint_angle[3] = 0
+    joint_angle[4] = 0
+    joint_angle[5] = 0
+    conbe_arm.move(joint_angle)
+
 def go_to_ready(conbe_arm):
     joint_angle = np.empty(6)
     joint_angle[0] = 0
@@ -109,7 +119,7 @@ def eef_open(eef):
 
 def eef_close(eef):
     # eef.move_to_goal(-1.46)
-    eef.move_to_goal(-0.60) #right arm
+    eef.move_to_goal(-1.3) #right arm
 
 if __name__ == '__main__': 
 
@@ -181,6 +191,9 @@ if __name__ == '__main__':
     go_to_ready(conbeR_arm)
     go_to_ready(conbeL_arm)
 
+    # init_pose(conbeR_arm)
+    # init_pose(conbeL_arm)
+
     eef_open(eef_joint_L)
     rospy.sleep(1)
     eef_open(eef_joint_R)
@@ -189,23 +202,25 @@ if __name__ == '__main__':
         try:
             print('start main loop')
 
-            print('stop')
-            dolly_pub.publish(49)
-            rospy.sleep(1)
-            print('left')
-            dolly_pub.publish(30)
-            rospy.sleep(1)
-            print('stop')
-            dolly_pub.publish(49)
-            rospy.sleep(1)
-            print('right')
-            dolly_pub.publish(68)
-            rospy.sleep(1)
-            print('stop')
-            dolly_pub.publish(49)
-            rospy.sleep(1)
-
             break
+
+            # print('stop')
+            # dolly_pub.publish(49)
+            # rospy.sleep(1)
+            # print('left')
+            # dolly_pub.publish(30)
+            # rospy.sleep(1)
+            # print('stop')
+            # dolly_pub.publish(49)
+            # rospy.sleep(1)
+            # print('right')
+            # dolly_pub.publish(68)
+            # rospy.sleep(1)
+            # print('stop')
+            # dolly_pub.publish(49)
+            # rospy.sleep(1)
+
+            # break
 
 
             ####################################
@@ -340,9 +355,18 @@ if __name__ == '__main__':
 
             rospy.sleep(1)
 
-            go_to_ready(conbeL_arm)
+            print('*****grab-target')
+            rospy.sleep(2.0)
+            eef_close(eef_joint_L)
+            rospy.sleep(2.0)
 
-            break
+            print('grab correctly')
+            go_to_box(conbeL_arm)
+            eef_open(eef_joint_L)
+            rospy.sleep(2.0)
+            go_to_ready(conbeL_arm)
+            rospy.sleep(2.0)
+
             # current_pose = conbe_arm.get_current_pose()
             # print ('target current pose')
             # print (current_pose)
@@ -373,10 +397,10 @@ if __name__ == '__main__':
             # print('z error: ', z_error)
             #if the error is too big  : in case that the IK couldn't be calculated
 
-            if(math.sqrt(x_error**2 + y_error**2 + z_error**2) > 0.15 and handEyeFeedback.num < 300):
-                print('*****calculation did not succeed ')
-                print(math.sqrt(x_error**2 + y_error**2 + z_error**2))
-                continue
+            # if(math.sqrt(x_error**2 + y_error**2 + z_error**2) > 0.15 and handEyeFeedback.num < 300):
+            #     print('*****calculation did not succeed ')
+            #     print(math.sqrt(x_error**2 + y_error**2 + z_error**2))
+            #     continue
 
             #################################################
             ## MOVE :: Tracking 
