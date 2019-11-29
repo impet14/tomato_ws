@@ -18,7 +18,7 @@ class Joint:
     def __init__(self, controller_name):
             #arm_name should be b_arm or f_arm
             self.jta = actionlib.SimpleActionClient(controller_name+'/follow_joint_trajectory', FollowJointTrajectoryAction)
-            rospy.init_node('joint_position_tester')
+        #     rospy.init_node('joint_position_tester')
             rospy.loginfo('Waiting for joint trajectory action')
             self.jta.wait_for_server()
             rospy.loginfo('Found joint trajectory action!')

@@ -13,16 +13,22 @@ from geometry_msgs.msg import PointStamped,Pose
 if __name__ == '__main__':
 
     rospy.init_node('target_ref_link0', anonymous=True)
+    # print('LorR = ',LorR)
+
+    LorR  = str(rospy.get_param('~LorR'))
+
+    #set color => L:green, R:blue
+    color = [0,1,0,1] if(LorR=='L') else [0,0,1,1]
 
     target_marker_node = "/target_marker"
     print("waiting for  --/target_maker-- message")
 
     #frame to transform
     target_frame    = "/camera_color_optical_frame"   ######FROM
-    reference_frame = "/Llink0"                        ####TO
+    reference_frame = "/"+ LorR +"link0"                        ####TO
 
     #Marker Publisher Initialize
-    marker_pub = rospy.Publisher("/target_marker_link0_frame", Marker, queue_size=10)
+    marker_pub = rospy.Publisher("/target_marker_" + LorR + "link0_frame", Marker, queue_size=10)
     target_ref_link0 = MarkerGenerator()
     target_ref_link0.type = Marker.CUBE_LIST
     target_ref_link0.scale = [.02]*3
@@ -47,10 +53,10 @@ if __name__ == '__main__':
             # print (target_point)
             # print (p.point)
             target_ref_link0.counter = 0
-            target_ref_link0.color = [0,1,0,1]
+            target_ref_link0.color = color
             m = target_ref_link0.marker(points= [(p.point.x, p.point.y, p.point.z)])
             marker_pub.publish(m)
-            print('----------------------target_marker is published')
+            print('----------------------target_marker_' + LorR + ' is published')
             
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue

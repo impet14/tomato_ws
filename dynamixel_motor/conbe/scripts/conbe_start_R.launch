@@ -16,12 +16,17 @@
     <param name="robot_description"
     	command="$(find xacro)/xacro --inorder '$(find rrbot_description)/urdf/conbeR.xacro'" />
 
-	<!-- [3] state publisher of L-->
+	<!-- [3-1] state publisher of R-->
 	<node name="State_Publisher" pkg="conbe" type="state_publisherR.py" /> 
 
 	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
 				<param name="/use_gui" value="false"/>
 				<rosparam param="/source_list">[/conbeR/joint_states]</rosparam>
+	</node>
+
+	<!-- [3-2] convert joint states to TF transforms for rviz, etc -->
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+		respawn="false" output="screen">
 	</node>
 
 	<!--[4-1] start meta controller       -->

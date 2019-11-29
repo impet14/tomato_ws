@@ -22,7 +22,7 @@ joints = ["joint0","joint1","joint2","joint3","joint4","joint5","joint6"]
 start_ID = 10
 
 j0_init = rosparam.get_param("/LArm/joint0_controller/motor/init")
-j1_init = rosparam.get_param("/LArm/joint1_controller/motor/init")
+j1_init = rosparam.get_param("/LArm/joint1_controller/motor_master/init")
 j2_init = rosparam.get_param("/LArm/joint2_controller/motor/init")
 j3_init = rosparam.get_param("/LArm/joint3_controller/motor/init")
 j4_init = rosparam.get_param("/LArm/joint4_controller/motor/init")

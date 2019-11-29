@@ -16,6 +16,8 @@ from utils import dxl_move as DXL
 from utils import handeye_sub as HandEye
 from utils import conbe_ik as CONBE
 from utils import client_trajectory
+from utils import arm_state_manager as arm_slave
+
 
 def create_marker(axis):
     marker = Marker()
@@ -116,44 +118,37 @@ def dolly_mode_interpreter(command):
 
 def eef_open(eef):
     eef.move_to_goal(0.20)
-    # eef.move_to_goal(0.34)
 
 def eef_close(eef):
-    # eef.move_to_goal(-1.46)
     eef.move_to_goal(-1.3) #right arm
 
 if __name__ == '__main__': 
 
+    rospy.init_node('Arm_interface', anonymous=True)
+    LorR = 'L'
+
+    Arm = arm_slave.Arm_state_manager('L')
     ##########################################
     ## create instancd to calculate IK
     ##########################################
     pos_bound = [0.01,0.01,0.01]
     ori_bound = [0.1,0.1,0.1]
 
-    conbeL_ik   = CONBE.ConbeIK(urdf_param='/LArm/robot_description',LorR='L',pos_bound=pos_bound,ori_bound=ori_bound)
-    conbeL_ik.check_setting()
-
-    conbeR_ik   = CONBE.ConbeIK(urdf_param='/RArm/robot_description',LorR='R',pos_bound=pos_bound,ori_bound=ori_bound)
-    conbeR_ik.check_setting()
+    conbe_ik   = CONBE.ConbeIK(urdf_param='/' + LorR +'Arm/robot_description',LorR=LorR,pos_bound=pos_bound,ori_bound=ori_bound)
+    conbe_ik.check_setting()
 
     ##########################################
     ## create instance to control single motor
     ##########################################
-    eef_joint_L = DXL.DXL_CONTROL(control_joint='/LArm/joint6_controller')
-    roll_joint0_L  = DXL.DXL_CONTROL(control_joint='/LArm/joint0_controller') 
-    pitch_joint3_L = DXL.DXL_CONTROL(control_joint='/LArm/joint3_controller')
-    pitch_joint5_L = DXL.DXL_CONTROL(control_joint='/LArm/joint5_controller')
-
-    eef_joint_R = DXL.DXL_CONTROL(control_joint='/RArm/joint6_controller')
-    roll_joint0_R  = DXL.DXL_CONTROL(control_joint='/RArm/joint0_controller') 
-    pitch_joint3_R = DXL.DXL_CONTROL(control_joint='/RArm/joint3_controller')
-    pitch_joint5_R = DXL.DXL_CONTROL(control_joint='/RArm/joint5_controller')
+    eef_joint = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint6_controller')
+    roll_joint0  = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint0_controller') 
+    pitch_joint3 = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint3_controller')
+    pitch_joint5 = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint5_controller')
 
     #########################################
     ## create instance to control the arm using FollowJointTrajectory
     #########################################
-    conbeL_arm = client_trajectory.Joint('LArm/conbeL_controller') 
-    conbeR_arm = client_trajectory.Joint('RArm/conbeR_controller') 
+    conbe_arm = client_trajectory.Joint('/' +  LorR +'Arm/conbe' + LorR + '_controller') 
 
     ###################################
     # Publisher
@@ -164,19 +159,11 @@ if __name__ == '__main__':
     eef_markerY = create_marker('y')
     eef_markerX = create_marker('x')
 
-    ## DORY control msg
-    ##msg can be interpret as below
-    # HERE, use dolly_mode_interpreter func 
-    # start-R : 100
-    # start-L  : 200
-    # stop         : 0
-    dolly_pub = rospy.Publisher("dolly", UInt16, queue_size = 1)
-
     ##################################
     # here describe the listener
     ##################################
-    target_marker_node = "/target_marker_Llink0_frame"
-    print("waiting for  --/target_maker_Llink0_frame-- message")
+    target_marker_node = "/target_marker_" + LorR + "link0_frame"
+    print("waiting for  --/target_marker_" + LorR + "link0_frame-- message")
 
     ##################################
     ###create handeye detect instance
@@ -185,43 +172,22 @@ if __name__ == '__main__':
     handeye_h = 480
     handEyeFeedback =HandEye.handeye(width=handeye_w,height=handeye_h)
     
-    
     ## start
     ## MOVE :: READY POSE
-    
-    go_to_ready(conbeR_arm)
-    go_to_ready(conbeL_arm)
+    go_to_ready(conbe_arm)
+    eef_open(eef_joint)
 
-    # init_pose(conbeR_arm)
-    # init_pose(conbeL_arm)
-
-    eef_open(eef_joint_L)
-    rospy.sleep(1)
-    eef_open(eef_joint_R)
+    Arm.publish_state('WAIT')
 
     while not rospy.is_shutdown():
         try:
-            print('start main loop')
+            Arm.publish_state('WAIT')
 
-            # print('stop')
-            # dolly_pub.publish(49)
-            # rospy.sleep(1)
-            # print('left')
-            # dolly_pub.publish(30)
-            # rospy.sleep(1)
-            # print('stop')
-            # dolly_pub.publish(49)
-            # rospy.sleep(1)
-            # print('right')
-            # dolly_pub.publish(68)
-            # rospy.sleep(1)
-            # print('stop')
-            # dolly_pub.publish(49)
-            # rospy.sleep(1)
-
-            # break
-
-
+            #if it's not state to go to target
+            if not Arm.get_command():
+                continue
+            
+            Arm.publish_state('OTW')
             ####################################
             ## Wait until the target position
             ## will be stable
@@ -251,51 +217,12 @@ if __name__ == '__main__':
                 rospy.sleep(0.1)
             
             #target point ref link0 frame
-            print('get target*****')
+            print('get target***' + LorR + 'Arm***')
             target_ref_link0_point = target_msg.points
             px = target_ref_link0_point[0].x
             py = target_ref_link0_point[0].y 
             pz = target_ref_link0_point[0].z + offset_z ##0.04 
             rospy.sleep(0.5) 
-
-            ####################################
-            ## DORRY MOVE
-            ####################################
-
-            # print('py : ', py)
-
-            # if(py > 0.3):
-            #     print('start-L')
-            #     dolly_pub.publish(dolly_mode_interpreter('start-L'))
-            #     rospy.sleep(3)
-            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
-            #     rospy.sleep(0.1)
-            #     continue
-            # elif(0.3 >= py > 0.1):
-            #     print('start-L')
-            #     dolly_pub.publish(dolly_mode_interpreter('start-L'))
-            #     rospy.sleep(1)
-            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
-            #     rospy.sleep(0.1)
-            #     continue
-            # elif(0.1 >= py >= -0.1):
-            #     print('stop')
-            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
-            #     rospy.sleep(1)
-            # elif(-0.1 > py >= -0.3):
-            #     print('start-R')
-            #     dolly_pub.publish(dolly_mode_interpreter('start-R'))
-            #     rospy.sleep(1)
-            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
-            #     rospy.sleep(0.1)
-            #     continue
-            # else:
-            #     print('start-R')
-            #     dolly_pub.publish(dolly_mode_interpreter('start-R'))
-            #     rospy.sleep(3)
-            #     dolly_pub.publish(dolly_mode_interpreter('stop'))
-            #     rospy.sleep(0.1)
-            #     continue
 
             ##############################################
             ##
@@ -346,62 +273,33 @@ if __name__ == '__main__':
 
             #GO TO PRE GRIP POSITION 
             print ('calculate IK*****')
-            Langles = conbeL_ik.calculate(pos,ori)
-            if(Langles == None):
+            angles = conbe_ik.calculate(pos,ori)
+            if(angles == None):
                 print('calculation wasnot succeed')
-                break
-            conbeL_arm.move(Langles)
+                Arm.publish_state('C_FAILED')
+                continue
 
+            conbe_arm.move(angles)
             rospy.sleep(1)
 
             print('*****grab-target')
             rospy.sleep(2.0)
-            eef_close(eef_joint_L)
+            eef_close(eef_joint)
             rospy.sleep(2.0)
 
             print('grab correctly')
-            go_to_box(conbeL_arm)
-            eef_open(eef_joint_L)
+            Arm.publish_state('SUCCEED')
+            go_to_box(conbe_arm)
+            eef_open(eef_joint)
             rospy.sleep(2.0)
-            go_to_ready(conbeL_arm)
+            go_to_ready(conbe_arm)
             rospy.sleep(2.0)
-
-            break
-
-            # current_pose = conbe_arm.get_current_pose()
-            # print ('target current pose')
-            # print (current_pose)
-            # print('GOAL POSITION: ',px,py,pz)
-            # print('EEF  POSITION: ',current_pose.position)
-
-            # x_error = px - current_pose.position.x 
-            # y_error = py - current_pose.position.y 
-            # z_error = pz - current_pose.position.z 
-            # print('x error: ', x_error)
-            # print('y error: ', y_error)
-            # print('z error: ', z_error)
-
-            # # compensating hand error before gripping
-            # conbeL_arm.move(px,py,pz+z_error-offset_z,ox,oy,oz,ow)
-            # rospy.sleep(1)
             
+            continue
 
-            # current_pose = conbeL_arm.get_current_pose()
-            # print ('compenstated current pose')
-            # print (current_pose)
-
-            # x_error = px - current_pose.position.x 
-            # y_error = py - current_pose.position.y 
-            # z_error = pz - current_pose.position.z 
-            # print('x error: ', x_error)
-            # print('y error: ', y_error)
-            # print('z error: ', z_error)
-            #if the error is too big  : in case that the IK couldn't be calculated
-
-            # if(math.sqrt(x_error**2 + y_error**2 + z_error**2) > 0.15 and handEyeFeedback.num < 300):
-            #     print('*****calculation did not succeed ')
-            #     print(math.sqrt(x_error**2 + y_error**2 + z_error**2))
-            #     continue
+            ######################################
+            #get current pose and compensate error
+            ######################################
 
             #################################################
             ## MOVE :: Tracking 
@@ -542,16 +440,16 @@ if __name__ == '__main__':
 
             print('*****grab-target')
             rospy.sleep(2.0)
-            eef_close(eef_joint_L)
+            eef_close(eef_joint)
             rospy.sleep(2.0)
 
             print('grab correctly')
-            go_to_box(conbeL_arm)
-            eef_open(eef_joint_L)
+            go_to_box(conbe_arm)
+            eef_open(eef_joint)
             rospy.sleep(2.0)
-            go_to_ready(conbeL_arm)
+            go_to_ready(conbe_arm)
             rospy.sleep(2.0)
-            go_to_ready(conbeL_arm)
+            go_to_ready(conbe_arm)
 
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):

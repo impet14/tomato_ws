@@ -17,12 +17,14 @@
 
   <!-- upper limit of the angle -->
   <xacro:property name="UpperLim_roll"  value="2.617" /> 
-  <xacro:property name="UpperLim_joint1"  value="1.46239" /> 
+  <!-- <xacro:property name="UpperLim_joint1"  value="1.46239" />  for DX-->
+  <xacro:property name="UpperLim_joint1"  value="2.00644" /> 
   <xacro:property name="UpperLim_joint3"  value="2.26006" /> 
   <xacro:property name="UpperLim_joint5"  value="1.958382" /> 
 
   <xacro:property name="LowerLim_roll"  value= "-2.617" /> 
-  <xacro:property name="LowerLim_joint1"  value="-1.8816" /> 
+  <!-- <xacro:property name="LowerLim_joint1"  value="-1.8816" />  for DX-->
+  <xacro:property name="LowerLim_joint1"  value="-1.8699" /> 
   <xacro:property name="LowerLim_joint3"  value="-1.7385" /> 
   <xacro:property name="LowerLim_joint5"  value="-1.677152" /> 
 
