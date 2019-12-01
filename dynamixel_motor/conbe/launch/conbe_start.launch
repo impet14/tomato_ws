@@ -19,11 +19,6 @@
 	<!-- [3] state publisher of L-->
 	<node name="State_Publisher" pkg="conbe" type="state_publisherL.py" /> 
 
-	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-				<param name="/use_gui" value="false"/>
-				<rosparam param="/source_list">[/conbeL/joint_states]</rosparam>
-	</node>
-
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
 		respawn="false" output="screen">
 	</node>
@@ -79,11 +74,6 @@
 	<!-- [3-1] state publisher of R-->
 	<node name="State_Publisher" pkg="conbe" type="state_publisherR.py" /> 
 
-	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-				<param name="/use_gui" value="false"/>
-				<rosparam param="/source_list">[/conbeR/joint_states]</rosparam>
-	</node>
-
 	<!-- [3-2] convert joint states to TF transforms for rviz, etc -->
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
 		respawn="false" output="screen">
@@ -120,13 +110,10 @@
 
 </group>
 
-    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="-0.398 -0.324 0.431 0 0 0 /world /camera_link 100" />
+<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="-0.398 -0.324 0.431 0 0 0 /world /camera_link 100" />
 	
-	<!-- <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
-		respawn="false" output="screen">
-	</node> -->
 	
-	<!--[5]  connect arduino as a node-->
-  	<include file="$(find rosserial_python)/launch/serial_node.launch" />
+<!--[5]  connect arduino as a node-->
+<!-- <include file="$(find rosserial_python)/launch/serial_node.launch" /> -->
 
 </launch>

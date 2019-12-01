@@ -6,6 +6,7 @@ from math import pi
 import math
 import tf
 import cv2
+import ipdb 
 import geometry_msgs.msg
 from std_msgs.msg      import String
 from std_msgs.msg      import UInt16
@@ -16,10 +17,13 @@ from utils import dxl_move as DXL
 from utils import handeye_sub as HandEye
 from utils import conbe_ik as CONBE
 from utils import client_trajectory
+from utils import arm_state_manager as arm_slave
+from utils import eef_tf_listener
 
-def create_marker(axis):
+
+def create_marker(axis,LorR):
     marker = Marker()
-    marker.header.frame_id = 'Rlink0'
+    marker.header.frame_id = LorR + 'link0'
     marker.header.stamp = rospy.Time.now()
     marker.ns = "visulize-eef-orientation"
     marker.id = 0 if(axis=='x') else 1 if(axis=='y')  else 2
@@ -59,6 +63,7 @@ def set_marker_param(marker,axis,px,py,pz,quaternion):
 def set_pre_position(q_orientation,px,py,pz,L):
     ##convert to matrix
     matrix = tf.transformations.quaternion_matrix(q_orientation)
+    # print('matrix: ',matrix)
     ##set the point
     point = np.matrix([0, 0, L, 1], dtype='float32')
     point.resize((4, 1))
@@ -95,10 +100,9 @@ def go_to_ready(conbe_arm):
     joint_angle[5] = 1.4214
     conbe_arm.move(joint_angle)
 
-
 def go_to_box(conbe_arm):
     joint_angle = np.empty(6)
-    joint_angle[0] = 1.57075  ###LArm
+    joint_angle[0] = -1.57075
     joint_angle[1] = -0.38
     joint_angle[2] = 0
     joint_angle[3] = 0.4244
@@ -115,81 +119,81 @@ def dolly_mode_interpreter(command):
         print('right')
 
 def eef_open(eef):
-    eef.move_to_goal(0.8)
-    # eef.move_to_goal(0.34)
+    eef.move_to_goal(0.20)
 
 def eef_close(eef):
-    # eef.move_to_goal(-1.46)
-    eef.move_to_goal(-1.2) #right arm
+    eef.move_to_goal(-1.3) #right arm
 
 if __name__ == '__main__': 
 
+    rospy.init_node('Arm_interface', anonymous=True)
+    LorR = 'L'
+
+    Arm = arm_slave.Arm_state_manager(LorR)
     ##########################################
-    ## create instancd to calculate IK
+    ## create instance to calculate IK
     ##########################################
     pos_bound = [0.01,0.01,0.01]
     ori_bound = [0.1,0.1,0.1]
 
-    conbeR_ik   = CONBE.ConbeIK(urdf_param='/RArm/robot_description',LorR='R',pos_bound=pos_bound,ori_bound=ori_bound)
-    conbeR_ik.check_setting()
+    conbe_ik   = CONBE.ConbeIK(urdf_param='/' + LorR +'Arm/robot_description',LorR=LorR,pos_bound=pos_bound,ori_bound=ori_bound)
+    conbe_ik.check_setting()
+
+    ########################################
+    ## create instance to calculate tf from link0 to EEF
+    ########################################
+    eef_jog = eef_tf_listener.eef_jog(LorR)
 
     ##########################################
     ## create instance to control single motor
     ##########################################
-    eef_joint_R = DXL.DXL_CONTROL(control_joint='/RArm/joint6_controller')
-    roll_joint0_R  = DXL.DXL_CONTROL(control_joint='/RArm/joint0_controller') 
-    pitch_joint3_R = DXL.DXL_CONTROL(control_joint='/RArm/joint3_controller')
-    pitch_joint5_R = DXL.DXL_CONTROL(control_joint='/RArm/joint5_controller')
+    eef_joint = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint6_controller')
+    roll_joint0  = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint0_controller') 
+    pitch_joint3 = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint3_controller')
+    pitch_joint5 = DXL.DXL_CONTROL(control_joint='/' + LorR +'Arm/joint5_controller')
 
     #########################################
     ## create instance to control the arm using FollowJointTrajectory
     #########################################
-    conbeR_arm = client_trajectory.Joint('RArm/conbeR_controller') 
+    conbe_arm = client_trajectory.Joint('/' +  LorR +'Arm/conbe' + LorR + '_controller') 
 
     ###################################
     # Publisher
     ###################################
     ## EEF COORDINARION Visualization
     pub = rospy.Publisher("eef_arrow", Marker, queue_size = 1)
-    eef_markerZ = create_marker('z')
-    eef_markerY = create_marker('y')
-    eef_markerX = create_marker('x')
-
-    ## DORY control msg
-    ##msg can be interpret as below
-    # HERE, use dolly_mode_interpreter func 
-    # start-R : 50~99
-    # start-L  : 0~48
-    # stop         : 49
+    eef_markerZ = create_marker('z',LorR)
+    eef_markerY = create_marker('y',LorR)
+    eef_markerX = create_marker('x',LorR)
 
     ##################################
     # here describe the listener
     ##################################
-    target_marker_node = "/target_marker_Rlink0_frame"
-    print("waiting for  --/target_maker_Rlink0_frame-- message")
+    target_marker_node = "/target_marker_" + LorR + "link0_frame"
 
     ##################################
     ###create handeye detect instance
     ##################################
-    handeye_w = rosparam.get_param("/usb_camR/image_width")
-    handeye_h = rosparam.get_param("/usb_camR/image_height")
+    handeye_w = 640
+    handeye_h = 480
     handEyeFeedback =HandEye.handeye(width=handeye_w,height=handeye_h)
-    
     
     ## start
     ## MOVE :: READY POSE
-    
-    go_to_ready(conbeR_arm)
+    go_to_ready(conbe_arm)
+    eef_open(eef_joint)
 
-    # init_pose(conbeR_arm)
-    # init_pose(conbeL_arm)
-
-    eef_open(eef_joint_R)
+    Arm.publish_state('WAIT')
 
     while not rospy.is_shutdown():
         try:
-            print('start main loop')
+            Arm.publish_state('WAIT')
 
+            #if it's not state to go to target
+            if not Arm.get_command():
+                continue
+            
+            Arm.publish_state('OTW')
             ####################################
             ## Wait until the target position
             ## will be stable
@@ -199,7 +203,7 @@ if __name__ == '__main__':
 
             rospy.wait_for_message(target_marker_node, Marker)
             px = -1
-            offset_z = 0.07
+            offset_z = 0.04
             while px < 0.01 : 
                 target_msg = rospy.wait_for_message(target_marker_node, Marker)
                 px = target_msg.points[0].x
@@ -219,56 +223,74 @@ if __name__ == '__main__':
                 rospy.sleep(0.1)
             
             #target point ref link0 frame
-            print('get target*****')
+            print('get target***' + LorR + 'Arm***')
             target_ref_link0_point = target_msg.points
             px = target_ref_link0_point[0].x
             py = target_ref_link0_point[0].y 
             pz = target_ref_link0_point[0].z + offset_z ##0.04 
             rospy.sleep(0.5) 
 
+            ##############################################
+            ##
+            ## HERE need to add the conditional branch
+            ## to check if the target is inside the worksp
+            ##
+            ###############################################
 
-            #**need to add pi to yaw rotation to offset from link0 coordination to eef coordination
+            ###################################
+            ### MOVE :: First Approach 
+            ###################################
+
+
+            ## need to add pi to yaw rotation to offset from link0 coordination to eef coordination
             #This is fixed value of this robot
-            ##**offset_z is the offset value of Z-axiz. which decides the point to calculate
-            #the rotation of axis to decide the orientation of eef
-            ##**This offset_z will directly affect to the solution of IK
-            
-            #offset_z = 0.32 if(pz>0.34) else 0.37
-            offset_z = 0.32 if(pz>0.34) else 0.47
-            pitch,yaw = calc_orientation(px,py,pz,offset_z)
-            ##Remember that the rotation will be done from Rot(z)*Rot(y)+Rot(x)
-            arm_orientation = tf.transformations.quaternion_from_euler(0,pitch,yaw+pi)
-            #decide the preposition. this will be the destanse between eef and target along with Z-axis
-            L = -0.05 #-0.005
+            offset = pi
 
-            #set target_position & target_orientation
-            pos = set_pre_position(arm_orientation,px,py,pz,L)
+            ##offset_z is the offset value of Z-axiz. which decides the point to calculate
+            #  the rotation of axis to decide the orientation of eef
+            ## This will directly affect to the solution of IK
+            # offset_z = 0.32 if(pz>0.34) else 0.37
+            offset_z = 0.32 if(pz>0.34) else 0.47
+            roll  =  0
+            pitch,yaw = calc_orientation(px,py,pz,offset_z)
+
+            ##Remember that the rotation will be done from Rot(z)*Rot(y)+Rot(x)
+            arm_orientation = tf.transformations.quaternion_from_euler(roll,pitch,yaw+offset)
+
+            #decide the preposition. this will be the destanse between eef and target along with Z-axis
+            offset_z = -0.05 #-0.005
+            # px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
+
+            # ox = arm_orientation[0]
+            # oy = arm_orientation[1]
+            # oz = arm_orientation[2]
+            # ow = arm_orientation[3]
+
+            pos = set_pre_position(arm_orientation,px,py,pz,offset_z)
             ori = arm_orientation
+
+            eef_markerZ = set_marker_param(eef_markerZ,'z',px,py,pz,arm_orientation)
+            eef_markerY = set_marker_param(eef_markerY,'y',px,py,pz,arm_orientation)
+            eef_markerX = set_marker_param(eef_markerX,'x',px,py,pz,arm_orientation)
+
+            # pub.publish(eef_markerZ)
+            # pub.publish(eef_markerY)
+            # pub.publish(eef_markerX)
 
             #GO TO PRE GRIP POSITION 
             print ('calculate IK*****')
-            Langles = conbeR_ik.calculate(pos,ori)
-            if(Langles == None):
+            angles = conbe_ik.calculate(pos,ori)
+            if(angles == None):
                 print('calculation wasnot succeed')
-                break
-            conbeR_arm.move(Langles)
+                Arm.publish_state('C_FAILED')
+                continue
 
+            conbe_arm.move(angles)
             rospy.sleep(1)
-
-            print('*****grab-target')
-            rospy.sleep(2.0)
-            eef_close(eef_joint_R)
-            rospy.sleep(2.0)
-
-            print('grab correctly')
-            go_to_box(conbeR_arm)
-            eef_open(eef_joint_R)
-            rospy.sleep(2.0)
-            go_to_ready(conbeR_arm)
-            rospy.sleep(2.0)
-
-            break
-
+            
+            ######################################
+            #get current pose and compensate error
+            ######################################
 
             #################################################
             ## MOVE :: Tracking 
@@ -291,22 +313,11 @@ if __name__ == '__main__':
             #Handye cam detect the target 
             ################################
             ## MOVE :: APPROACH TO THE TARGET
-            ################################
-            def adjust_h_w(h_loc,w_loc):
-                delta_h =  1.0 if (h_loc < 0 ) else 0 if (h_loc == -1) else -1.0
-                delta_w = -1.0 if (w_loc < 0 ) else 0 if (w_loc == -1) else  1.0
-                jog.set_linear_axis(x=delta_h,y=delta_w,z=0)
-                jog.move_with_linear_delta()
-                # jog.set_angular_axis(x=-delta_w,y=delta_h,z=0)
-                # jog.move_with_angular_delta()
-                rospy.sleep(0.5)
-                return (handEyeFeedback.h - handeye_h/2,handEyeFeedback.w - handeye_w/2)
-        
+            ################################        
             def adjust_z(delta):
                 jog.set_linear_axis(x=0,y=0,z=delta)
                 jog.move_with_linear_delta()
                 rospy.sleep(0.5)
-
 
             print('handeyeFD.num = ',handEyeFeedback.num)
 
@@ -318,6 +329,8 @@ if __name__ == '__main__':
                     delta = 0.05 if(4 < i and i < 15) else -0.05
                     print(delta)
                     pitch_joint5.move_with_delta(delta)
+
+                    print('handeyeFD.num',handEyeFeedback.num)
 
                     #in case that the handeye recognaizes the target
                     if(handEyeFeedback.num != 0):
@@ -332,38 +345,35 @@ if __name__ == '__main__':
             if(not handeye_recognition_isOK):
                 continue
 
-
             def check_if_H_isOK():
                 h_error = math.fabs(handEyeFeedback.h - handeye_h/2)
                 return bool(h_error < handeye_h/50)
 
-            count = 0
+            tracking_try_count = 0
+            jog_z_ik_fail_count = 0
             delta = -0.05
 
             while(handEyeFeedback.num < thred):
-                count += 1
+                tracking_try_count += 1
                 H_isOK = check_if_H_isOK()
 
                 if(H_isOK):
+                    ipdb.set_trace()
                     print('Z-adjust') 
+                    delta = 0.03
+                    pos = eef_jog.transform([0,0,delta])
+                    ori = arm_orientation
 
-                    ##############################################
-                    ## translate from Rlink0 to EEFlink
-                    ##############################################
-                    #frame to transform
-                    target_frame    = "/Rlink0"   ######FROM
-                    reference_frame = "/REEFlink"                        ####TO
+                    print ('calculate IK*****')
+                    angles = conbe_ik.calculate(pos,ori)
+                    if(angles == None):
+                        jog_z_ik_fail_count += 1
+                        print('calculation wasnot succeed')
+                        Arm.publish_state('C_FAILED')
+                    else:
+                        conbe_arm.move(angles)
 
-                    listener = tf.TransformListener()
-                    listener.waitForTransform(reference_frame, target_frame, rospy.Time(0),rospy.Duration(4.0))
-
-                    #transform position from target_frame to reference frame
-                    p=listener.transformPoint(reference_frame,target_frame)
-
-                    delta = 1.0
-                    adjust_z(delta)
                 else:
-
                     print(delta)
                     prev_h_error    = math.fabs(handEyeFeedback.h - handeye_h/2)
                     pitch_joint5.move_with_delta(delta)
@@ -376,23 +386,22 @@ if __name__ == '__main__':
                     
                     delta = -0.09 if(delta <0 ) else 0.02
 
-                if(count > 50):
+                if(tracking_try_count > 50 or job_z_ik_fail_count > 5):
                     print('****************tracking count over 50')
                     break
 
-
             print('*****grab-target')
             rospy.sleep(2.0)
-            eef_close(eef_joint_L)
+            eef_close(eef_joint)
             rospy.sleep(2.0)
 
             print('grab correctly')
-            go_to_box(conbeL_arm)
-            eef_open(eef_joint_L)
+            go_to_box(conbe_arm)
+            eef_open(eef_joint)
             rospy.sleep(2.0)
-            go_to_ready(conbeL_arm)
+            go_to_ready(conbe_arm)
             rospy.sleep(2.0)
-            go_to_ready(conbeL_arm)
+            go_to_ready(conbe_arm)
 
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):

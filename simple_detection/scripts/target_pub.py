@@ -92,6 +92,8 @@ def applyFilter(img,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX):
         redmask = cv2.dilate(redmask, kernel, iterations = 1)
         red_croped = cv2.bitwise_and(croped, croped, mask=redmask)
 
+        ####K-means to clustering
+
         return red_croped,croped
 
 def main():
@@ -207,46 +209,54 @@ def main():
         Umask_MIN, Umask_MAX = trackbar_mask2.get_param_as_tuple()
 
         gray_croped,croped = applyFilter(bg_removed,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX)
-
         # print(gray_croped.shape)
-        box_index = np.where(gray_croped != 0)
+        box_index = np.where(croped != 0)
 
-        if len(box_index[0]) >= 10 : # check red exists
+        ##cut the image to the range og left side tomato
+        if (len(box_index[0]) >= 10  and len(box_index[1]) >= 10): # check red exists
+            #this is the tomato which is in left side
+            target_left = np.amin(box_index[1])
+            right = target_left + color_w/20
+            left_tomato_cropped_img = bg_removed[:,0:right]
 
-            left = np.amin(box_index[1])
-            right = np.amax(box_index[1])
-            top = np.amin(box_index[0])
-            bottom = np.amax(box_index[0])
+            gray_croped, croped = applyFilter(left_tomato_cropped_img,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX)
+            # print(gray_croped.shape)
+            box_index = np.where(croped != 0)
 
-            i_centor = int(left + right) / 2
-            j_centor = int(top + bottom) / 2
+            if (len(box_index[0]) >= 10  and len(box_index[1]) >= 10): # check red exists
+                left = np.amin(box_index[1])
+                right = np.amax(box_index[1])
+                top = np.amin(box_index[0])
+                bottom = np.amax(box_index[0])
 
-            box_img = croped[left:right,top:bottom]
+                if(left < right and top < bottom):
+                    i_centor = int(left + right) / 2
+                    j_centor = int(top + bottom) / 2
 
-            #add l r t b
-            print ("detected red")
-            align_img_target_RGB = img_rgb[int(top):int(bottom), int(left):int(right)]
-            align_img_depth      = depth_map[int(top):int(bottom),int(left):int(right)]
-            align_target_detect = np.hstack((align_img_target_RGB, align_img_depth))
+                    #add l r t b
+                    print ("detected red")
+                    align_img_target_RGB = img_rgb[int(top):int(bottom), int(left):int(right)]
+                    align_img_depth      = depth_map[int(top):int(bottom),int(left):int(right)]
+                    align_target_detect = np.hstack((align_img_target_RGB, align_img_depth))
 
-            #display window
-            if (enable_image_show):
-                cv2.namedWindow('gray_croped', cv2.WINDOW_AUTOSIZE)
-                cv2.imshow("gray_croped", gray_croped)
-                cv2.namedWindow('align target', cv2.WINDOW_AUTOSIZE)
-                cv2.imshow('align target', align_target_detect)
+                    #display window
+                    if (enable_image_show):
+                        cv2.namedWindow('gray_croped', cv2.WINDOW_AUTOSIZE)
+                        cv2.imshow("gray_croped", gray_croped)
+                        cv2.namedWindow('align target', cv2.WINDOW_AUTOSIZE)
+                        cv2.imshow('align target', align_target_detect)
 
-            depth_pixel = [(int(left)+int(right))/2, (int(top)+int(bottom))/2]
-            depth_point = rs.rs2_deproject_pixel_to_point(depth_intrin, depth_pixel, img_depth[depth_pixel[1],depth_pixel[0]]*depth_scale)
+                    depth_pixel = [(int(left)+int(right))/2, (int(top)+int(bottom))/2]
+                    depth_point = rs.rs2_deproject_pixel_to_point(depth_intrin, depth_pixel, img_depth[depth_pixel[1],depth_pixel[0]]*depth_scale)
 
-            #target mark
-            hand_mark.counter = 0
-            t = rospy.get_time()
-            hand_mark.color = [1,0,0,1]
-            m = hand_mark.marker(points= [(depth_point[0], depth_point[1], depth_point[2])])
-            pub.publish(m)
+                    #target mark
+                    hand_mark.counter = 0
+                    t = rospy.get_time()
+                    hand_mark.color = [1,0,0,1]
+                    m = hand_mark.marker(points= [(depth_point[0], depth_point[1], depth_point[2])])
+                    pub.publish(m)
 
-            cv2.circle(bg_removed, (i_centor, j_centor), radius=7, color=(255,0,0), thickness=-1)
+                    cv2.circle(bg_removed, (i_centor, j_centor), radius=7, color=(255,0,0), thickness=-1)
 
         # Calculate Frames per second (FPS)
         num_frames += 1

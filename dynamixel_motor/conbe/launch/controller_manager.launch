@@ -6,11 +6,11 @@
             namespace: dxl_manager
             serial_ports:
                 conbe_L_port:
-                    port_name: "/dev/ttyUSB0"
+                    port_name: "/dev/ttyUSB1"
                     baud_rate: 1000000
                     min_motor_id: 10
                     max_motor_id: 17
-                    update_rate: 200
+                    update_rate: 10
         </rosparam>
     </node>
 </launch>

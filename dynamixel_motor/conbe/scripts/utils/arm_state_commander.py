@@ -28,7 +28,7 @@ class Arm_state_commander():
             self.pub.publish(UInt16(0))
 
     def get_arm_status(self):
-        return self._arm_response()
+        return self._arm_response
     
     def msg_interpreter(self,msg):
         self._arm_response = self._arm_response_dict[msg]
