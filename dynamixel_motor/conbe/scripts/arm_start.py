@@ -176,7 +176,7 @@ if __name__ == '__main__':
     ##################################
     handeye_w = 640
     handeye_h = 480
-    handEyeFeedback =HandEye.handeye(width=handeye_w,height=handeye_h)
+    handEyeFeedback =HandEye.handeye(LorR=LorR,width=handeye_w,height=handeye_h)
     
     ## start
     ## MOVE :: READY POSE
@@ -241,6 +241,7 @@ if __name__ == '__main__':
             ### MOVE :: First Approach 
             ###################################
 
+            ipdb.set_trace()
 
             ## need to add pi to yaw rotation to offset from link0 coordination to eef coordination
             #This is fixed value of this robot
@@ -273,7 +274,7 @@ if __name__ == '__main__':
             eef_markerY = set_marker_param(eef_markerY,'y',px,py,pz,arm_orientation)
             eef_markerX = set_marker_param(eef_markerX,'x',px,py,pz,arm_orientation)
 
-            # pub.publish(eef_markerZ)
+            pub.publish(eef_markerZ)
             # pub.publish(eef_markerY)
             # pub.publish(eef_markerX)
 
@@ -287,7 +288,9 @@ if __name__ == '__main__':
 
             conbe_arm.move(angles)
             rospy.sleep(1)
-            
+
+            ipdb.set_trace()
+
             ######################################
             #get current pose and compensate error
             ######################################
@@ -296,7 +299,9 @@ if __name__ == '__main__':
             ## MOVE :: Tracking 
             #################################################
 
-            thred = 100000
+            thred = 150000
+            # thred = 180000
+
 
             #### approach untill the handeye cam filled more than thredshod
             # print(handEyeFeedback.w,handEyeFeedback.h,handEyeFeedback.num)
@@ -322,7 +327,7 @@ if __name__ == '__main__':
             print('handeyeFD.num = ',handEyeFeedback.num)
 
             ##look for the target
-            if(handEyeFeedback.num == 0):
+            if(handEyeFeedback.num < 10):
                 handeye_recognition_isOK = False
                 for i in range(20):
                     print('look for ...',i)
@@ -331,7 +336,7 @@ if __name__ == '__main__':
                     pitch_joint5.move_with_delta(delta)
 
                     print('handeyeFD.num',handEyeFeedback.num)
-
+                    ipdb.set_trace()
                     #in case that the handeye recognaizes the target
                     if(handEyeFeedback.num != 0):
                         print('handEyeFeedback is ok')
@@ -340,56 +345,104 @@ if __name__ == '__main__':
             else:
                 handeye_recognition_isOK = True
 
-
             #if the handeye couldn't find the target
             if(not handeye_recognition_isOK):
+                print('handEyeFeedback is not ok')
+                ipdb.set_trace()
                 continue
 
             def check_if_H_isOK():
                 h_error = math.fabs(handEyeFeedback.h - handeye_h/2)
                 return bool(h_error < handeye_h/50)
 
-            tracking_try_count = 0
-            jog_z_ik_fail_count = 0
-            delta = -0.05
+            def check_if_W_isOK():
+                w_error = math.fabs(handEyeFeedback.w - handeye_w/2)
+                return bool(w_error < handeye_w/80)
 
-            while(handEyeFeedback.num < thred):
+            tracking_try_count = 0
+            delta_h = -0.05
+            delta_w = -0.02
+            thed_over_cnt = 0
+            while(thed_over_cnt<5):
+                if handEyeFeedback.num > thred:
+                    thed_over_cnt = + 1
+
                 tracking_try_count += 1
                 H_isOK = check_if_H_isOK()
+                W_isOK = check_if_W_isOK()
 
-                if(H_isOK):
+                if(handEyeFeedback.num > 80000):
                     ipdb.set_trace()
                     print('Z-adjust') 
                     delta = 0.03
                     pos = eef_jog.transform([0,0,delta])
                     ori = arm_orientation
 
-                    print ('calculate IK*****')
-                    angles = conbe_ik.calculate(pos,ori)
-                    if(angles == None):
-                        jog_z_ik_fail_count += 1
-                        print('calculation wasnot succeed')
-                        Arm.publish_state('C_FAILED')
-                    else:
-                        conbe_arm.move(angles)
+                    for i in range(5):
+                        print ('calculate IK*****')
+                        angles = conbe_ik.calculate(pos,ori)
+                        if(angles == None):
+                            print('calculation wasnot succeed')
+                            Arm.publish_state('C_FAILED')
+                        else:
+                            conbe_arm.move(angles)
+                            break
 
-                else:
-                    print(delta)
-                    prev_h_error    = math.fabs(handEyeFeedback.h - handeye_h/2)
-                    pitch_joint5.move_with_delta(delta)
-                    current_h_error = math.fabs(handEyeFeedback.h - handeye_h/2)
-
-                    if(prev_h_error > current_h_error or math.fabs(prev_h_error-current_h_error) < 10):
-                        delta = delta
-                    else:
-                        delta = -1.0 * delta
+                if(not H_isOK):
+                    h_err = handeye_h/2 - handEyeFeedback.h 
+                    print(h_err)
+                    current_joint5_state = pitch_joint5.get_current_pos() 
+                    if (h_err > 100):
+                        h_err = 100
+                    elif (h_err < -100):
+                        h_err = -100
                     
-                    delta = -0.09 if(delta <0 ) else 0.02
+                    out_h_control = current_joint5_state+(-h_err*0.001)
+                    pitch_joint5.move_to_goal(out_h_control)
 
-                if(tracking_try_count > 50 or job_z_ik_fail_count > 5):
-                    print('****************tracking count over 50')
+                if(not W_isOK):
+                    w_err = handeye_w/2 - handEyeFeedback.w 
+                    print(w_err)
+                    current_joint0_state = roll_joint0.get_current_pos() 
+                    if (w_err > 100):
+                        w_err = 100
+                    elif (w_err < -100):
+                        w_err = -100
+                    
+                    out_w_control = current_joint0_state+(w_err*0.001)
+                    roll_joint0.move_to_goal(out_w_control)
+
+                # elif(not H_isOK):
+                #     print(delta_h)
+                #     prev_h_error    = math.fabs(handEyeFeedback.h - handeye_h/2)
+                #     pitch_joint5.move_with_delta(delta_h)
+                #     current_h_error = math.fabs(handEyeFeedback.h - handeye_h/2)
+
+                #     if(prev_h_error > current_h_error or math.fabs(prev_h_error-current_h_error) < 10):
+                #         delta_h = delta_h
+                #     else:
+                #         delta_h = -1.0 * delta_h
+                    
+                #     delta_h = -0.09 if(delta_h <0 ) else 0.02
+                
+                # elif(not W_isOK):
+
+                #     print(delta_w)
+                #     prev_w_error    = math.fabs(handEyeFeedback.w - handeye_w/2)
+                #     roll_joint0.move_with_delta(delta_w)
+                #     current_w_error = math.fabs(handEyeFeedback.w - handeye_w/2)
+
+                #     if(prev_w_error > current_w_error or math.fabs(prev_w_error-current_w_error) < 5):
+                #         delta_w = delta_w
+                #     else:
+                #         delta_w = -1.0 * delta_w
+
+                rospy.sleep(0.1)
+                if(tracking_try_count > 1000):
+                    print('****************tracking count over 1000')
                     break
-
+            
+            ipdb.set_trace()
             print('*****grab-target')
             rospy.sleep(2.0)
             eef_close(eef_joint)

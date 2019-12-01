@@ -30,6 +30,9 @@ class DXL_CONTROL():
             if(not self._is_moving or count > 20):
                 break
     
+    def get_current_pos(self):
+        return self._current_pos
+        
     def move_to_goal(self,goal):
         self.set_goal_pos(goal)
         self.move()
