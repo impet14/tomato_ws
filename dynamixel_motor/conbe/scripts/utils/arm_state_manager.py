@@ -8,24 +8,26 @@ import tf
 import cv2
 import geometry_msgs.msg
 from std_msgs.msg      import String
-from std_msgs.msg      import UInt16
+from std_msgs.msg      import Int16
 
 class Arm_state_manager():
     def __init__(self,LorR):
         self.arm = LorR + 'Arm'
         self.pub_dist = '/' + self.arm + '/movement_status'
         self.sub_dist = '/' + self.arm + '/main_command'
-        self.pub =  rospy.Publisher(self.pub_dist, UInt16,queue_size=1)
-        self.sub = rospy.Subscriber(self.sub_dist,UInt16,self.callback,queue_size=1)
+        self.pub =  rospy.Publisher(self.pub_dist, Int16,queue_size=1)
+        self.sub = rospy.Subscriber(self.sub_dist,Int16,self.callback,queue_size=1)
         self._command = False
         self.arm_msg_dict = {0:False,1:True}
-        self._arm_response_dict = {'C_FAILED':0,'SUCCEED':1,'T_FAILDED':5,'OTW':10,'WAIT':50}
+        self._arm_response_dict = {'NO_TOMATO':-1,'C_FAILED':0,'SUCCEED':1,'T_FAILDED':5,'OTW':10,'WAIT':50}
     def publish_state(self,state):
         for i in range(3):
-            self.pub.publish(UInt16(self._arm_response_dict[state]))
+            self.pub.publish(Int16(self._arm_response_dict[state]))
 
     def get_command(self):
-        return self._command
+        current_command = self._command
+        self._command = False
+        return current_command
 
     def msg_interpreter(self,msg):
         # here get the command fro main

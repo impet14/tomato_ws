@@ -7,16 +7,39 @@ import math
 import tf
 import cv2
 import geometry_msgs.msg
-from std_msgs.msg   import Float32
+from std_msgs.msg   import Float64
 
-class Arm_state_commander():
-    def __init__(self,LorR):
+class Dolly_feedback():
+    def __init__(self):
         self._sub_dist = '/Dolly/state'
-        self._dist = 0.0
-        self._sub =  rospy.Subscriber(self.sub_dist, Float32, self.callback,queue_size=1)
+        self._dist = 0.0  ##tatal distance
+        self._local_offset = 0.0
+        self._offset = 0
+        self._sub =  rospy.Subscriber(self._sub_dist, Float64, self.callback,queue_size=1)
 
-    def get_dolly_state(self):
-        return self._dist
+    #set current distance as a offset
+    def set_offset(self):
+        self._local_offset = self._dist
+    
+    #############################
+    ## to get local distance , 
+    ## reference from offset
+    ## and get local_state()
+    #############################
+    def get_local_state(self):
+        print('dist         : ',self._dist)
+        print('local_offset : ',self._local_offset)
+        return self.calibrated_value(self._dist - self._local_offset)
+        
+    def get_state(self):
+        return self.calibrated_value(self._dist)
+    
+    def calibrated_value(self,dist):
+        #calibrate actual fb usung bias by experimental results
+        return dist * 1.212
         
     def callback(self,msg):
-        self._dist = msg.data
+        if(self._offset == 0):
+            ###use first feedback as a offset
+            self._offset = self._dist
+        self._dist = msg.data - self._offset

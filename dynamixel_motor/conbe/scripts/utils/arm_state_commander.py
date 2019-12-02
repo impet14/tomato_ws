@@ -8,24 +8,24 @@ import tf
 import cv2
 import geometry_msgs.msg
 from std_msgs.msg      import String
-from std_msgs.msg      import UInt16
+from std_msgs.msg      import Int16
 
 class Arm_state_commander():
     def __init__(self,LorR):
         self.arm = LorR + 'Arm'
         self.pub_dist = '/' + self.arm + '/main_command'
         self.sub_dist = '/' + self.arm + '/movement_status'
-        self.pub = rospy.Publisher(self.pub_dist,UInt16,queue_size=1)
-        self.sub =  rospy.Subscriber(self.sub_dist, UInt16, self.callback,queue_size=1)
-        self._arm_response_dict = {0:'C_FAILED',1:'SUCCEED',5:'T_FAILDED',10:'OTW',50:'WAIT'}
+        self.pub = rospy.Publisher(self.pub_dist,Int16,queue_size=1)
+        self.sub =  rospy.Subscriber(self.sub_dist, Int16, self.callback,queue_size=1)
+        self._arm_response_dict = {-1:'NO_TOMATO',0:'C_FAILED',1:'SUCCEED',5:'T_FAILDED',10:'OTW',50:'WAIT'}
         self._arm_response = 'WAIT'
         self._prev_response = 'None'
     def start_moving(self):
         for i in range(3):
-            self.pub.publish(UInt16(1))
+            self.pub.publish(Int16(1))
     def stop_moving(self):
         for i in range(3):
-            self.pub.publish(UInt16(0))
+            self.pub.publish(Int16(0))
 
     def get_arm_status(self):
         return self._arm_response

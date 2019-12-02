@@ -10,8 +10,8 @@
   </node>
 
   <!-- transform target in RArm coordination -->
-  <!-- <node name="camera_tf_listener_R" pkg="simple_detection" type="camera_tf_listener.py" respawn="true" output="screen">
+  <node name="camera_tf_listener_R" pkg="simple_detection" type="camera_tf_listener.py" respawn="true" output="screen">
     <param name="LorR" value="R"/>
-  </node> -->
+  </node>
 
 </launch>

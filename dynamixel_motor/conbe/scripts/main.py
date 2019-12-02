@@ -6,9 +6,11 @@ from math import pi
 import math
 import tf
 import cv2
+import ipdb 
 import geometry_msgs.msg
 from std_msgs.msg      import String
 from std_msgs.msg      import UInt16
+from std_msgs.msg      import Int16
 from geometry_msgs.msg import Quaternion
 from cv_bridge         import CvBridge, CvBridgeError
 from visualization_msgs.msg       import Marker
@@ -18,6 +20,8 @@ from utils import conbe_ik as CONBE
 from utils import client_trajectory
 from utils import arm_state_commander as arm_master
 from utils import target_sub
+from utils import dolly_sub as DollyFB
+
 
 def create_marker(axis):
     marker = Marker()
@@ -91,22 +95,26 @@ def key_control():
     background = np.zeros((200,300,3), np.uint8)
     cv2.namedWindow('input_test')
 
-    flag = True
-    while(flag):
-        cv2.imshow('input_test',background)
-        input = cv2.waitKey(0)
-        if input == ord('r'):  # if key 'z' is pressed 
-            print('r-pressed: Go to right')
-            dolly_pub.publish(59)
-        elif input == ord('l'):  # if key 'x' is pressed 
-            print('l-pressed: Go to left')
-            dolly_pub.publish(39)
-        elif input == ord('q'): # break
-            cv2.destroyAllWindows()
-            break
-        elif input == ord('s'):
-            print('stop')
-            dolly_pub.publish(49)
+    while not rospy.is_shutdown():
+        try: 
+            cv2.imshow('input_test',background)
+            print('Reference distance:  ',dolly_sub.get_state())
+            input = cv2.waitKey(0)
+            if input == ord('r'):  # if key 'z' is pressed 
+                print('r-pressed: Go to right')
+                dolly_pub.publish(59)
+            elif input == ord('l'):  # if key 'x' is pressed 
+                print('l-pressed: Go to left')
+                dolly_pub.publish(39)
+            elif input == ord('q'): # break
+                cv2.destroyAllWindows()
+                break
+            elif input == ord('s'):
+                print('stop')
+                dolly_pub.publish(49)
+            print('Reference distance:  ',dolly_sub.get_state())
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
 
 
 def move_dolly(dolly_error):
@@ -116,44 +124,39 @@ def move_dolly(dolly_error):
     # start-R : 50~99
     # start-L  : 0~48
     # stop         : 49
-    dolly_pub = rospy.Publisher("dolly", UInt16, queue_size = 1)
 
-    ######################################
-    # here describe the listener of target
-    ######################################
-    target_marker_node = "/target_marker_Llink0_frame"
-    print("waiting for  --/target_maker_Llink0_frame-- message")
-    target_marker_sub = target_sub.target_subscriber('L')
-
+    test = 1
     while not rospy.is_shutdown():
         try:     
             target_msg = target_marker_sub.get()
-
             #target point ref Llink0 frame
-            print('get target position in main*****')
+            # print('get target position in main*****')
             target_ref_link0_point = target_msg.points
             px = target_ref_link0_point[0].x
             py = target_ref_link0_point[0].y 
             pz = target_ref_link0_point[0].z
-            print(px,py,pz)
+            if(test == 1 ):
+                print('******************PY :     ', py)    
+                test = 2
+            
+            print('Reference distance:  ',dolly_sub.get_state())
             
             ####################################
             ## DORRY MOVE
             ####################################
-
             ##in case tomato is not recongnized 
             if(px == -1 and py == -1 and pz == -1):
                 ##Go to right
-                print('*****go right in no detection')
+                # print('*****go right in no detection')
                 dolly_pub.publish(50)
             elif(py > dolly_error):
-                print('L')
-                dolly_pub.publish(45)
+                # print('L')
+                dolly_pub.publish(40)
             elif(-dolly_error > py ):
-                print('R')
-                dolly_pub.publish(55)
+                # print('R')
+                dolly_pub.publish(60)
             else:
-                print('S')
+                # print('S')
                 dolly_pub.publish(49)
                 rospy.sleep(0.3)
                 break
@@ -161,23 +164,221 @@ def move_dolly(dolly_error):
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
 
+def move_dolly_by_tracking(max_distance,move_flag):
+    thred = 0.05
+    thred_over_cnt = 0
+    dolly_pub.publish(49)
+    while(thred_over_cnt < 5):
+        print('thred_over_cnt',thred_over_cnt)
+        target_msg = target_marker_sub.get()
+        target_ref_link0_point = target_msg.points
+        px = target_ref_link0_point[0].x
+        py = target_ref_link0_point[0].y 
+        pz = target_ref_link0_point[0].z
+        current_distance = dolly_sub.get_state()
+        if(py != -1):
+            target_y = py
+        else:
+            target_y = 1
+        print(target_y)
+        D_isOK = bool(math.fabs(target_y) < thred)
+        ###########################################
+        ## when dolly was about to out of the lane 
+        ###########################################
+        if (current_distance < -0.01):
+            print('got to righr for a while')
+            move_flag['L'] = False
+            move_flag['R'] =True
+            dolly_pub.publish(49)
+            for i in range(10):
+                dolly_pub.publish(59)
+                rospy.sleep(0.5)
+            dolly_pub.publish(49)
+            break
+
+        if (current_distance > max_distance):
+            print('dolly is about to off the rane')
+            print('got to left for a while')
+            move_flag['L'] = True
+            move_flag['R'] = False
+            dolly_pub.publish(49)
+            for i in range(10):
+                dolly_pub.publish(39)
+                rospy.sleep(0.5)
+            dolly_pub.publish(49)
+            break
+
+        if (move_flag['Force'] and move_flag['L'] and not move_flag['R']):
+            print('got to left for a while')
+            move_flag['L'] = True
+            move_flag['R'] =True
+            move_flag['Force'] = False
+            dolly_pub.publish(49)
+            for i in range(5):
+                dolly_pub.publish(59)
+                rospy.sleep(0.2)
+            dolly_pub.publish(49)
+            break
+        elif (move_flag['Force'] and move_flag['R'] and not move_flag['L']):
+            print('got to righr for a while')
+            move_flag['L'] = True
+            move_flag['R'] =True
+            move_flag['Force'] = False
+            dolly_pub.publish(49)
+            for i in range(5):
+                dolly_pub.publish(39)
+                rospy.sleep(0.2)
+            dolly_pub.publish(49)
+            break
+
+        ###########################################
+        ## usual state
+        ###########################################
+        if(D_isOK):
+            print('stop')
+            thred_over_cnt  += 1
+            speed_control = 49
+            dolly_pub.publish(49)
+            rospy.sleep(0.2)
+            if(thred_over_cnt >= 5):
+                break
+        else:
+            d_err = -target_y
+            if (d_err > 0.5):
+                d_err = 0.5
+            elif (d_err < -0.5):
+                d_err = -0.5
+
+            ###############################################
+            ##check move flag
+            ###############################################
+            if(not move_flag['L'] and d_err<0):
+                d_err = -d_err
+            if(not move_flag['R'] and d_err>0):
+                d_err = -d_err
+            ##########################################
+
+            speed_control = 49 + 20 * d_err 
+            
+            dolly_pub.publish(UInt16(speed_control))
+        rospy.sleep(0.15)
+    return move_flag
+
+def move_dolly_right():
+    thred = 0.05
+    thred_over_cnt = 0
+    dolly_pub.publish(49)
+    while(thred_over_cnt < 3):
+        print('thred_over_cnt',thred_over_cnt)
+        target_msg = target_marker_sub.get()
+        target_ref_link0_point = target_msg.points
+        px = target_ref_link0_point[0].x
+        py = target_ref_link0_point[0].y 
+        pz = target_ref_link0_point[0].z
+        current_distance = dolly_sub.get_state()
+        if(py != -1):
+            target_y = py
+        else:
+            target_y = -1
+        print(target_y)
+
+        D_isOK = bool(math.fabs(target_y) < thred)
+        ###########################################
+        ## usual state
+        ###########################################
+        if(D_isOK):
+            print('stop')
+            thred_over_cnt  += 1
+            speed_control = 49
+            dolly_pub.publish(49)
+            rospy.sleep(0.2)
+
+        else:
+            d_err = -target_y
+            if (d_err > 0.5):
+                d_err = 0.5
+            elif (d_err < -0.5):
+                d_err = -0.5
+
+            speed_control = 49 + 20 * d_err 
+            
+            dolly_pub.publish(UInt16(speed_control))
+        rospy.sleep(0.15)
+
+def move_dolly_by_fb():
+    thred = 0.03
+    thred_over_cnt = 0
+    target_y = 1
+    ##########IMPORTANT#############
+    #### initialize the offset of distance 
+    #### to check get reference movement in this loop
+    while(thred_over_cnt < 5):
+        print('Reference distance:  ',dolly_sub.get_local_state())
+        if(target_y == 1):
+            ############################
+            #get target-msg only 1time
+            target_msg = target_marker_sub.get()
+            target_ref_link0_point = target_msg.points
+            px = target_ref_link0_point[0].x
+            py = target_ref_link0_point[0].y 
+            pz = target_ref_link0_point[0].z
+            if(py != -1):
+                target_y = py
+        print('target_y:  ',target_y)
+        D_isOK = bool(math.fabs(target_y + dolly_sub.get_local_state()) < thred)
+        if(D_isOK):
+            print('stop')
+            thred_over_cnt  += 1
+            speed_control = 49
+            dolly_pub.publish(49)
+        else:
+            d_err = -(target_y + dolly_sub.get_local_state() )
+            print(d_err)
+            if (d_err > 0.6):
+                d_err = 0.6
+            elif (d_err < -0.6):
+                d_err = -0.6
+            speed_control = 49 + 22 * d_err 
+        dolly_pub.publish(UInt16(speed_control))
+        rospy.sleep(0.15)
+
 if __name__ == '__main__': 
+    ######################################
     ## init_node & create arm commander
+    ######################################
     rospy.init_node('Arm_main',anonymous=True)
     LArm = arm_master.Arm_state_commander('L')
     RArm = arm_master.Arm_state_commander('R')
+
+    ######################################
+    # here describe the listener of target
+    ######################################
+    target_marker_node = "/target_marker_Llink0_frame"
+    target_marker_sub = target_sub.target_subscriber('L')
+
+    ######################################
+    ## instance to get feedback from Dolly
+    ######################################
+    dolly_pub = rospy.Publisher("Dolly/command", UInt16, queue_size = 1)
+    dolly_sub = DollyFB.Dolly_feedback()
+
+    ####################
+    ## define max dist of dolly
+    ####################
+    dolly_max_distance = 1.2
+    move_direction_flag = {'L':True,'R':True,'Force':False}
+
 
     while not rospy.is_shutdown():
         try:
             # key_control()
             # continue
-
             print('start main loop')
-            move_dolly(0.05)
-
-            print('Predd Enter to start Arm movement .....')
-            raw_input()
-            print('START')
+            print('move_direction_flag: ',move_direction_flag)
+            # move_dolly(0.05)
+            # move_dolly_by_fb()
+            # move_direction_flag = move_dolly_by_tracking(dolly_max_distance,move_direction_flag)
+            move_dolly_right()
 
             ##################
             ##command to move arm
@@ -185,16 +386,57 @@ if __name__ == '__main__':
             print('start_moving')
             LArm.start_moving()
             # RArm.start_moving()
+            
+            C_FAILED_COUNT = 0
 
-            while not rospy.is_shutdown():
-                if(LArm.get_arm_status == 'WAIT'):
+            while (True):
+                print(LArm.get_arm_status())  
+                if(LArm.get_arm_status() == 'WAIT'):
+                    move_direction_flag['L'] = True
+                    move_direction_flag['R'] = True
+                    move_direction_flag['Force'] = False
                     break
                 rospy.sleep(1)
+
+            # while (True):
+            #     print(LArm.get_arm_status())
+            #     if(LArm.get_arm_status() == 'NO_TOMATO'):
+            #         ####have to move dolly anyway
+            #             print('move anyway')
+            #             if(move_direction_flag['R']):
+            #                 move_direction_flag['L'] = False
+            #                 move_direction_flag['R'] = True
+            #             else:
+            #                 move_direction_flag['L'] = True
+            #                 move_direction_flag['R'] = False
+                                                        
+            #             move_direction_flag['Force'] = True
+            #             break
+
+            #     if(LArm.get_arm_status() == 'C_FAILED'):   
+            #         C_FAILED_COUNT += 1   
+            #         if(C_FAILED_COUNT >= 4):
+            #             if(move_direction_flag['R']):
+            #                 move_direction_flag['L'] = False
+            #                 move_direction_flag['R'] = True
+            #             else:
+            #                 move_direction_flag['L'] = True
+            #                 move_direction_flag['R'] = False
+
+            #             move_direction_flag['Force'] = True
+            #             print('move anyway')
+            #             break
+  
+            #     if(LArm.get_arm_status() == 'WAIT'):
+            #         move_direction_flag['L'] = True
+            #         move_direction_flag['R'] = True
+            #         move_direction_flag['Force'] = False
+            #         break
+            #     rospy.sleep(1)
                 
             print('stop_moving')
 
             LArm.stop_moving()
-            # RArm.start_moving()
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue

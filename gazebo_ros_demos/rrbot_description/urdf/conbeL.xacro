@@ -7,7 +7,7 @@
   <xacro:property name="mass"      value="1" /> <!-- arbitrary value for mass -->
   <xacro:property name="width"     value="0.05" /> <!-- Square dimensions (widthxwidth) of beams -->
   <xacro:property name="height0"   value="0.275" /> <!-- Link 0 -->
-  <xacro:property name="height1"   value="0.036" /> <!-- Link 1 -->
+  <xacro:property name="height1"   value="0.050" /> <!-- Link 1 -->
   <xacro:property name="height2"   value="0.105" /> <!-- Link 2 -->
   <xacro:property name="height3"   value="0.043" /> <!-- Link 3 -->
   <xacro:property name="height4"   value="0.041" /> <!-- Link 4 -->
@@ -17,12 +17,14 @@
 
   <!-- upper limit of the angle -->
   <xacro:property name="UpperLim_roll"  value="2.617" /> 
+  <xacro:property name="UpperLim_roll_joint0"  value="0.86" /> 
   <!-- <xacro:property name="UpperLim_joint1"  value="1.46239" />  for DX-->
   <xacro:property name="UpperLim_joint1"  value="2.00644" /> 
-  <xacro:property name="UpperLim_joint3"  value="2.26006" /> 
+  <xacro:property name="UpperLim_joint3"  value="2.18" /> 
   <xacro:property name="UpperLim_joint5"  value="1.958382" /> 
 
   <xacro:property name="LowerLim_roll"  value= "-2.617" /> 
+  <xacro:property name="LowerLim_roll_joint0"  value= "-1.87" /> 
   <!-- <xacro:property name="LowerLim_joint1"  value="-1.8816" />  for DX-->
   <xacro:property name="LowerLim_joint1"  value="-1.8699" /> 
   <xacro:property name="LowerLim_joint3"  value="-1.7385" /> 
@@ -60,7 +62,7 @@
     Lx="0" Ly="0" Lz="${height0/2}" Lroll="0" Lpitch="0" Lyaw="0" />
 
   <xacro:joint_link_macro 
-    prefix="L" joint_name="joint0" joint_type="revolute" LowerLim="${LowerLim_roll}" UpperLim="${UpperLim_roll}"
+    prefix="L" joint_name="joint0" joint_type="revolute" LowerLim="${LowerLim_roll_joint0}" UpperLim="${UpperLim_roll_joint0}"
     parent="link0" child="link1" 
     width="${width}" height="${height1}" color="orange" mass="1.0" 
     Jx="0" Jy="0" Jz="${height0}" Jroll="0" Jpitch="0" Jyaw="0" 
