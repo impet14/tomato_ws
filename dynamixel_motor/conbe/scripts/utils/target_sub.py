@@ -32,9 +32,16 @@ class target_subscriber():
         hand_mark.color = [0,1,0,1]
         self._msg = hand_mark.marker(points= [(-1, -1, -1)])        
 
+    def getXYZ(self):
+        x = self._msg.points[0].x
+        y = self._msg.points[0].y
+        z = self._msg.points[0].z
+        return (x,y,z)
+
     def get(self):
         return self._msg
         
     def callback(self,msg):
+        # print(msg)
         self._flag = True
         self._msg = msg

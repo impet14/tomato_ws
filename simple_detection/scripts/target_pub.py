@@ -257,6 +257,14 @@ def main():
                     pub.publish(m)
 
                     cv2.circle(bg_removed, (i_centor, j_centor), radius=7, color=(255,0,0), thickness=-1)
+        else:
+            #target mark
+            hand_mark.counter = 0
+            t = rospy.get_time()
+            hand_mark.color = [1,0,0,1]
+            m = hand_mark.marker(points= [(-10, -10, -10)])
+            pub.publish(m)
+            print('published dammy target')
 
         # Calculate Frames per second (FPS)
         num_frames += 1

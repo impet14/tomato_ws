@@ -155,7 +155,7 @@ joint6_controller:
         module: joint_position_controller
         type: JointPositionController
     joint_name: joint6
-    joint_speed: 0.5
+    joint_speed: 0.4
     motor:
         id: 17
         init: 512

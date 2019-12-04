@@ -239,14 +239,17 @@ if __name__ == '__main__':
     # init_pose(conbe_arm)
     eef_open(eef_joint)
 
-    Arm.publish_state('WAIT')
+    Arm.set_state('WAIT')
 
     while not rospy.is_shutdown():
         try:
-            Arm.publish_state('WAIT')
+
+            ipdb.set_trace()
+            Arm.publish_current_state()
+            rospy.sleep(0.5)
 
             #if it's not state to go to target
-            if not Arm.get_command():
+            if not Arm.command:
                 continue
 
             Arm.publish_state('OTW')
@@ -291,10 +294,9 @@ if __name__ == '__main__':
             ## to check if the target is inside the worksp
             ###############################################
             if(check_ws(px,py,pz)):
-                Arm.publish_state('OTW')
-            else:
-                Arm.publish_state('NO_TOMATO')
-                rospy.sleep(1)
+                Arm.publish_current_state()
+            else:   
+                Arm.publish_state_until_get_response('NO_TOMATO')
                 continue
 
 
@@ -302,7 +304,7 @@ if __name__ == '__main__':
             ### MOVE :: First Approach 
             ###################################
 
-            #ipdb.set_trace()()
+            ##ipdb.set_trace()()()
 
             ## need to add pi to yaw rotation to offset from link0 coordination to eef coordination
             #This is fixed value of this robot
@@ -320,7 +322,7 @@ if __name__ == '__main__':
             arm_orientation = tf.transformations.quaternion_from_euler(roll,pitch,yaw+offset)
 
             #decide the preposition. this will be the destanse between eef and target along with Z-axis
-            offset_z = -0.02 #-0.005
+            offset_z = -0.001 #-0.002
             # px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
 
             # ox = arm_orientation[0]
@@ -344,7 +346,7 @@ if __name__ == '__main__':
             angles = conbe_ik.calculate(pos,ori)
             if(angles == None):
                 print('calculation wasnot succeed')
-                Arm.publish_state('C_FAILED')
+                Arm.publish_state_until_get_response('C_FAILED')
                 continue
 
             conbe_arm.move(angles)
@@ -352,7 +354,7 @@ if __name__ == '__main__':
 
             # key_control()
 
-            #ipdb.set_trace()()
+            ##ipdb.set_trace()()()
 
             ######################################
             #get current pose and compensate error
@@ -362,12 +364,13 @@ if __name__ == '__main__':
             ## MOVE :: Tracking 
             #################################################
 
-            thred = 150000
+            # thred = 150000
             # thred = 180000
+            thred = 280
 
 
             #### approach untill the handeye cam filled more than thredshod
-            # print(handEyeFeedback.w,handEyeFeedback.h,handEyeFeedback.num)
+            # print(handEyeFeedback.w,handEyeFeedback.h,handEyeFeedback.r)
 
             w_location = handEyeFeedback.w - handeye_w/2
             h_location = handEyeFeedback.h - handeye_h/2
@@ -387,10 +390,10 @@ if __name__ == '__main__':
                 jog.move_with_linear_delta()
                 rospy.sleep(0.5)
 
-            print('handeyeFD.num = ',handEyeFeedback.num)
+            print('handEyeFeedback.r = ',handEyeFeedback.r)
 
             ##look for the target
-            if(handEyeFeedback.num < 10):
+            if(handEyeFeedback.r < 5):
                 handeye_recognition_isOK = False
                 for i in range(20):
                     print('look for ...',i)
@@ -398,10 +401,10 @@ if __name__ == '__main__':
                     print(delta)
                     pitch_joint5.move_with_delta(delta)
 
-                    print('handeyeFD.num',handEyeFeedback.num)
-                    #ipdb.set_trace()()
+                    print('handEyeFeedback.num',handEyeFeedback.r)
+                    ##ipdb.set_trace()()()
                     #in case that the handeye recognaizes the target
-                    if(handEyeFeedback.num != 0):
+                    if(handEyeFeedback.r != 0):
                         print('handEyeFeedback is ok')
                         handeye_recognition_isOK = True
                         break
@@ -412,6 +415,7 @@ if __name__ == '__main__':
             if(not handeye_recognition_isOK):
                 print('handEyeFeedback is not ok')
                 go_to_ready(conbe_arm)
+                Arm.publish_state_until_get_response('T_FAILED')
                 continue
 
             def check_if_H_isOK():
@@ -428,11 +432,15 @@ if __name__ == '__main__':
             thed_over_cnt = 0
 
             current_joint5_state = pitch_joint5.get_current_pos()
-            while(thed_over_cnt<3):
-                # print('Hand Eye pixel : ',handEyeFeedback.num)
+            while(thed_over_cnt < 3 and  handEyeFeedback.cnt < 30):
+                print('Hand Eye cnt : ',handEyeFeedback.cnt)
+
                 # cv2.waitKey(1) & 0xFF == ord('q')
-                # ipdb.set_trace()
-                if handEyeFeedback.num > thred:
+                # #ipdb.set_trace()()
+                if handEyeFeedback.r > thred:
+                    print('Hand Eye redian : ',handEyeFeedback.r)
+                    #ipdb.set_trace()()
+
                     thed_over_cnt += 1
 
                 tracking_try_count += 1
@@ -464,31 +472,34 @@ if __name__ == '__main__':
                     out_w_control = current_joint0_state+(w_err*0.0003)
                     roll_joint0.move_to_goal(out_w_control)
 
-                if(math.fabs(h_err) < 60 and math.fabs(w_err) < 60):
-                    print('Z-adjust') 
-                    # ipdb.set_trace()
-                    delta = 0.007
-                    pos = eef_jog.transform([0,0,delta])
-                    ori = arm_orientation
+                # if(math.fabs(h_err) < 60 and math.fabs(w_err) < 60):
+                #     print('Z-adjust') 
+                #     # #ipdb.set_trace()()
+                #     delta = 0.007
+                #     pos = eef_jog.transform([0,0,delta])
+                #     ori = arm_orientation
 
-                    for i in range(5):
-                        print ('calculate IK*****')
-                        angles = conbe_ik.calculate(pos,ori)
-                        if(angles == None):
-                            print('calculation wasnot succeed')
-                            # Arm.publish_state('C_FAILED')
-                        else:
-                            conbe_arm.move(angles)
-                            break
+                #     for i in range(5):
+                #         print ('calculate IK*****')
+                #         angles = conbe_ik.calculate(pos,ori)
+                #         if(angles == None):
+                #             print('calculation wasnot succeed')
+                #             # Arm.publish_state('C_FAILED')
+                #         else:
+                #             conbe_arm.move(angles)
+                #             break
 
                 rospy.sleep(0.1)
                 if(tracking_try_count > 1000):
                     print('****************tracking count over 1000')
+                    Arm.publish_state_until_get_response('T_FAILED')
                     break
             
             #ipdb.set_trace()()
             print('*****grab-target')
             rospy.sleep(2.0)
+            eef_close(eef_joint)
+            rospy.sleep(0.5)
             eef_close(eef_joint)
             rospy.sleep(2.0)
 
@@ -496,12 +507,13 @@ if __name__ == '__main__':
             go_to_box(conbe_arm)
             rospy.sleep(2.0)  
 
-            ipdb.set_trace()
             eef_open(eef_joint)
             rospy.sleep(2.0)
             go_to_ready(conbe_arm)
             rospy.sleep(2.0)
             go_to_ready(conbe_arm)
+            rospy.sleep(2.0)
+            Arm.publish_state_until_get_response('SUCCEED')
 
 
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):

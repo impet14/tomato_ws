@@ -12,12 +12,14 @@ class handeye():
         self.handeye_sub = rospy.Subscriber('/usb_cam' + LorR + '/handeye_msg', Int32MultiArray, self.callback,queue_size=1)
         self.w   = 0
         self.h   = 0
-        self.num = 0
+        self.r   = 0
+        self.cnt = 0
         # rospy.init_node('conbe', anonymous=True)
 
     def callback(self,msg): 
         self.w   = msg.data[0]
         self.h   = msg.data[1]
-        self.num = msg.data[2]
+        self.r   = msg.data[2]
+        self.cnt = msg.data[3]
         # self.msg = msg
         # print('subscribe w=%d h=%d num=%d'%(self.w, self.h, self.num))

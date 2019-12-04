@@ -18,6 +18,7 @@ class Dolly_control():
         self._offset = 0
         self._sub = rospy.Subscriber(self._sub_dist, Float64, self.callback,queue_size=1)
         self._pub = rospy.Publisher("Dolly/command", UInt16, queue_size = 1)
+        self._move_dist = 0.28
         self.moveDirection = moveDirection
         self.target_marker_subL = target_sub.target_subscriber('L')
         if(moveDirection == 'R'):
@@ -63,7 +64,7 @@ class Dolly_control():
         while not rospy.is_shutdown():
             try: 
                 cv2.imshow('input_test',background)
-                print('Reference distance:  ',dolly_sub.get_state())
+                print('Reference distance:  ',self.get_state())
                 input = cv2.waitKey(0)
                 if input == ord('r'):  # if key 'z' is pressed 
                     print('r-pressed: Go to right')
@@ -77,9 +78,12 @@ class Dolly_control():
                 elif input == ord('s'):
                     print('stop')
                     self._pub.publish(49)
-                print('Reference distance:  ',self._sub.get_state())
+                print('Reference distance:  ',self.get_state())
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
+
+    def set_dist(self,dist):
+        self._move_dist = dist
 
     def move_dolly(self):
         thred = 0.05
@@ -91,7 +95,7 @@ class Dolly_control():
             ######################
             _,py,_ = self.target_marker_subL.getXYZ()
 
-            current_distance = self._sub.get_state()
+            current_distance = self.get_state()
             print('current distance: ',current_distance,'[m]')
 
             if(current_distance < self.left_thred):
@@ -136,39 +140,48 @@ class Dolly_control():
             rospy.sleep(0.15)
         return self.moveDirection
 
-    def move_dolly_distance(moveDirection,rane_dist,left_thred,right_thred,distance):
-        thred = 0.05
-        thred_over_cnt = 0
-        dolly_pub.publish(49)
+    def move_dolly_distance(self):
+
+        self._pub.publish(49)
+
+        current_distance = self.get_state()
+        print('current distance: ',current_distance,'[m]')
+
+        # in case that in last time, the goal was inside the range, 
+        # but stopped the place in slightly over the range, this should change direction 
+        if(current_distance < self.left_thred):
+            self.moveDirection = 'R'
+        elif(current_distance > self.right_thred):
+            self.moveDirection = 'L'
+
+        target_distance = current_distance - self._move_dist if(self.moveDirection == 'L') else current_distance + self._move_dist
+
+        next_moveDirection = self.moveDirection
+        
+        if(target_distance < self.left_thred):
+            target_distance = self.left_thred
+            next_moveDirection = 'R'
+        elif(target_distance > self.right_thred):
+            target_distance = self.right_thred
+            next_moveDirection = 'L'
+
+        print('target distance: ',target_distance,'[m]')
+        print('move to ',self.moveDirection)
+
         while(True):
-            current_distance = self._sub.get_state()
-            print('current distance: ',current_distance,'[m]')
-
-            target_distance = current_distance - distance if(self.moveDirection == 'L') else current_distance + distance
-
-            next_moveDirection = self.moveDirection
-            
-            if(target_distance < self.left_thred):
-                target_distance = self.left_thred
-                next_moveDirection = 'R'
-            elif(target_distance > self.right_thred):
-                target_distance = self.right_thred
-                next_moveDirection = 'L'
-
-            print('target distance: ',target_distance,'[m]')
-            print('move to ',self.moveDirection)
-
-
+            current_distance = self.get_state()
             if(self.moveDirection == 'L'):
-                speed_control = -0.7
-                if(current_distance > target_distance):
+                d_err = -0.5
+                if(current_distance < target_distance):
                     break
             else:
-                speed_control = 0.7
+                d_err = 0.5
                 if(current_distance > target_distance):
                     break
 
+            speed_control = 49 + 22 * d_err 
             self._pub.publish(UInt16(speed_control))
+            rospy.sleep(0.05)
 
         self.moveDirection = next_moveDirection
         return self.moveDirection
@@ -193,8 +206,8 @@ class Dolly_control():
             if(D_isOK):
                 print('stop')
                 thred_over_cnt  += 1
-                speed_control = 49
-                dolly_pub.publish(49)
+                # speed_control = 49
+                self.f_pub.publish(49)
             else:
                 d_err = -(target_y + self._sub.get_local_state() )
                 print(d_err)

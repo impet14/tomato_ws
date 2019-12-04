@@ -48,6 +48,7 @@ if __name__ == '__main__':
             target_ref_camera.header.frame_id = target_frame
             target_ref_camera.header.stamp =rospy.Time(0)
             target_ref_camera.point = target_point[0]
+        
             p=listener.transformPoint(reference_frame,target_ref_camera)
            
             # print (target_point)
@@ -55,6 +56,10 @@ if __name__ == '__main__':
             target_ref_link0.counter = 0
             target_ref_link0.color = color
             m = target_ref_link0.marker(points= [(p.point.x, p.point.y, p.point.z)])
+
+            if(int(target_point[0].x) == -10):
+                m = target_ref_link0.marker(points= [(-1, -1, -1)])
+
             marker_pub.publish(m)
             print('----------------------target_marker_' + LorR + ' is published')
             
