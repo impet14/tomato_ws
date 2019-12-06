@@ -98,6 +98,7 @@ class Dolly_control():
             current_distance = self.get_state()
             print('current distance: ',current_distance,'[m]')
 
+            #change direction when over limitation
             if(current_distance < self.left_thred):
                 self.moveDirection = 'R'
             elif(current_distance > self.right_thred):
@@ -110,23 +111,30 @@ class Dolly_control():
                 if(self.moveDirection == 'L'):
                     #so as not to go right close to right thredshold
                     if(py < -0.10):
+                        print('so as not to go right close to right thredshold')
                         d_err = -1
             #in case the camera doesn't recognize tomato
             else:
                 if(self.moveDirection == 'L'):
                     d_err = -1
+                    #so as not to go left close to left thredshold
+                    if(py > 0.05):
+                        print('****so as not to go left close to left thredshold')
+                        d_err = 1
                 else:
                     d_err = 1
-            D_isOK = bool(math.fabs(d_err) < thred)
+            print('d_err : ',d_err)
+            
             ###########################################
             ## usual stated_err
             ###########################################
+            D_isOK = bool(math.fabs(d_err) < thred)
             if(D_isOK):
                 print('stop')
                 thred_over_cnt  += 1
                 speed_control = 49
                 self._pub.publish(49)
-                rospy.sleep(0.2)
+                # rospy.sleep(0.2)
 
             else:
                 if (d_err > 0.7):
@@ -134,7 +142,7 @@ class Dolly_control():
                 elif (d_err < -0.7):
                     d_err = -0.7
 
-                speed_control = 49 + 20 * d_err 
+                speed_control = 49 + 35 * d_err  #20 before
                 
                 self._pub.publish(UInt16(speed_control))
             rospy.sleep(0.15)

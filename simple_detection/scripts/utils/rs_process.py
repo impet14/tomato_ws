@@ -22,8 +22,8 @@ class rs_process:
         self.isOK = True
         # print (data.encoding) #rgb8
         try:
-            self.bgr_image = self.bridge.imgmsg_to_cv2(data, "passthrough")
-            self.rgb_image = cv2.cvtColor(self.bgr_image, cv2.COLOR_BGR2RGB)
+            self.rgb_image = self.bridge.imgmsg_to_cv2(data, "passthrough")
+            self.bgr_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_RGB2BGR)
         except CvBridgeError as e:
             print(e)
     def depth_callback(self, data):

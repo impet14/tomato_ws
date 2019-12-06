@@ -17,7 +17,7 @@
     	command="$(find xacro)/xacro --inorder '$(find rrbot_description)/urdf/conbeL.xacro'" />
 
 	<!-- [3] state publisher of L-->
-	<node name="State_Publisher" pkg="conbe" type="state_publisherL.py" /> 
+	<node name="State_Publisher" pkg="conbe" type="state_publisherL.py" output="screen"/> 
 
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
 		respawn="false" output="screen">

@@ -14,7 +14,6 @@ class target_subscriber():
     def __init__(self,LorR):
         self._LorR  = LorR
         self._sub_dist = "/target_marker_" + self._LorR + "link0_frame"
-        self._flag = False
         self.init_marker()
         self._sub =  rospy.Subscriber(self._sub_dist, Marker, self.callback,queue_size=1)
 
@@ -43,5 +42,4 @@ class target_subscriber():
         
     def callback(self,msg):
         # print(msg)
-        self._flag = True
         self._msg = msg

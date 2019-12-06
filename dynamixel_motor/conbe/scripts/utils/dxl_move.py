@@ -10,7 +10,7 @@ class DXL_CONTROL():
         self.sub_dist = '/' + control_joint + '/state'
         self.pub = rospy.Publisher(self.pub_dist,Float64,queue_size=1)
         self.sub =  rospy.Subscriber(self.sub_dist, JointState, self.callback,queue_size=1)
-        self.current_pos = 0 
+        self._current_pos = 0 
         self.target_pos = 0
         self.load = 0
         self._goal_pos = 0
@@ -22,13 +22,13 @@ class DXL_CONTROL():
     def move(self):
         self.pub.publish(Float64(self._goal_pos))
         # rospy.sleep(0.5)
-        count = 0
-        while (fabs(self._error) > 0.003):
-            count += 1
-            print('error--', self._error)
-            rospy.sleep(0.1)
-            if(not self._is_moving or count > 20):
-                break
+        # count = 0
+        # while (fabs(self._error) > 0.003):
+        #     count += 1
+        #     print('error--', self._error)
+        #     rospy.sleep(0.005)
+        #     if(not self._is_moving or count > 20):
+        #         break
     
     def get_current_pos(self):
         return self._current_pos

@@ -12,8 +12,10 @@
   <xacro:property name="height3"   value="0.043" /> <!-- Link 3 -->
   <xacro:property name="height4"   value="0.041" /> <!-- Link 4 -->
   <xacro:property name="height5"   value="0.11" /> <!-- Link 5 -->
-  <xacro:property name="height6"   value="0.125" /> <!-- Link 6 -->
-  <xacro:property name="heightEEF" value="0.03" /> <!-- Link 7  EEF Link-->
+  <!-- Link 6 -->
+  <!-- <xacro:property name="height6"   value="0.125" />  -->
+  <xacro:property name="height6"   value="0.145" /> <!-- Link 6 -->
+  <xacro:property name="heightEEF" value="0.01" /> <!-- Link 7  EEF Link 3=>5-->
 
   <!-- upper limit of the angle -->
   <xacro:property name="UpperLim_roll"  value="2.617" /> 

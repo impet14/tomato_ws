@@ -64,11 +64,12 @@ def process(msg):
 					deg_range  = 300.0
 				else:
 					#in case x.id == 11
-					resolution = 1023 if(offset[1] == 512) else 4095 if(offset[1] == 2047) else 0
-					deg_range  = 300.0 if(offset[1] == 512) else 360.0
+					resolution = 1023 if(offset[1] < 2000) else 4095 if(offset[1] > 2000) else 0
+					deg_range  = 300.0 if(offset[1] < 2000) else 360.0
 
 				if (resolution==0): 
 					print('please check the offset value of pkg:dynamixelmotor node:state_publisher.py')
+					print('Probably offset value inside code is wrong')
 					break
 				joint_states.name.append(joints[x.id-start_ID])
 				joint_states.position.append((x.position-offset[x.id-start_ID])*(deg_range/resolution)*(pi/180))

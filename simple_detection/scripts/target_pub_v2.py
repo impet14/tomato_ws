@@ -248,43 +248,37 @@ def main():
         #     #this is the tomato which is in left side
         #     target_left = np.amin(box_index[1])
         #     right = target_left + color_w/20
-          
-        left_tomato_cropped_img = bg_removed[:,0:color_w/2]
 
-        cv2.imshow('left_tomato_cropped_img', left_tomato_cropped_img)
+        if(True):            
+            left_tomato_cropped_img = bg_removed[:,0:color_w/2]
 
-        #get the result val and image obj
-        red_area, extracted_image = get_colored_area(left_tomato_cropped_img,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX)
-#################################################################
+            cv2.imshow('left_tomato_cropped_img', left_tomato_cropped_img)
 
-        #convert red-area to gray scale
-        gray_extracted_image = cv2.cvtColor(extracted_image, cv2.COLOR_RGB2GRAY)
-        #convert red-area-gray scale to binary img
-        ret, threshold_img = cv2.threshold(gray_extracted_image, 1, 255, cv2.THRESH_BINARY)
+            #get the result val and image obj
+            red_area, extracted_image = get_colored_area(left_tomato_cropped_img,Lmask_MIN,Lmask_MAX,Umask_MIN,Umask_MAX)
+    #################################################################
 
-        #init marker
-        hand_mark.counter = 0
-        t = rospy.get_time()
-        hand_mark.color = [1,0,0,1]
-        m = hand_mark.marker(points= [(-10, -10, -10)])
+            #convert red-area to gray scale
+            gray_extracted_image = cv2.cvtColor(extracted_image, cv2.COLOR_RGB2GRAY)
+            #convert red-area-gray scale to binary img
+            ret, threshold_img = cv2.threshold(gray_extracted_image, 1, 255, cv2.THRESH_BINARY)
+            
+            if(ret):
+                #find contours
+                image, contours, hierarchy = cv2.findContours(threshold_img.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+                # get size of contour
+                contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
+                if(len(contours)>0):
+                    #select biggest one
+                    biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
+                    cv2.drawContours(extracted_image, contours, -1, (255, 0, 0), 2)
+                    (x,y),radius = cv2.minEnclosingCircle(biggest_contour)
+                    #Get the total pixel of biggest_contour
+                    red_area = cv2.contourArea(biggest_contour)
+                    center = (int(x),int(y))
+                    radius = int(radius)
+                    num_of_cnts = len(contours)
 
-        if(ret):
-            #find contours
-            image, contours, hierarchy = cv2.findContours(threshold_img.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            # get size of contour
-            contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
-            if(len(contours)>0):
-                #select biggest one
-                biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
-                cv2.drawContours(extracted_image, contours, -1, (255, 0, 0), 2)
-                (x,y),radius = cv2.minEnclosingCircle(biggest_contour)
-                #Get the total pixel of biggest_contour
-                red_area = cv2.contourArea(biggest_contour)
-                center = (int(x),int(y))
-                radius = int(radius)
-                num_of_cnts = len(contours)
-
-                if(radius > 10):
                     #display window
                     if (enable_image_show):
                         cv2.putText(extracted_image, 'red pixel(total): '+str(red_area), (10,20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (77, 255, 9), 2)
@@ -304,12 +298,22 @@ def main():
                     depth_point = rs.rs2_deproject_pixel_to_point(depth_intrin, depth_pixel, img_depth[depth_pixel[1],depth_pixel[0]]*depth_scale)
 
                     #target mark
+                    hand_mark.counter = 0
+                    t = rospy.get_time()
+                    hand_mark.color = [1,0,0,1]
                     m = hand_mark.marker(points= [(depth_point[0], depth_point[1], depth_point[2])])
+                    pub.publish(m)
+
                     cv2.circle(bg_removed, (int(x), int(y)), radius=7, color=(255,0,0), thickness=-1)
 
-        #target mark
-        pub.publish(m)
-        print('published dammy target')  
+            else:
+                #target mark
+                hand_mark.counter = 0
+                t = rospy.get_time()
+                hand_mark.color = [1,0,0,1]
+                m = hand_mark.marker(points= [(-10, -10, -10)])
+                pub.publish(m)
+                print('published dammy target')  
 
         # Calculate Frames per second (FPS)
         num_frames += 1

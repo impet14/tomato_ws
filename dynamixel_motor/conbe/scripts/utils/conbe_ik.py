@@ -15,8 +15,8 @@ class ConbeIK():
         self._lower_bound, self._upper_bound = self._ik_solver.get_joint_limits()
         #can modify the joint limits
         # self._ik_solver.set_joint_limits([0.0]* self._ik_solver.number_of_joints, upper_bound)
-        self._pos_bound = pos_bound
-        self._ori_bound = ori_bound
+        self.pos_bound = pos_bound
+        self.ori_bound = ori_bound
         
     def check_setting(self):
         # check the info of model
@@ -31,8 +31,8 @@ class ConbeIK():
         result = self._ik_solver.get_ik(self._seed_state,
                         pos[0], pos[1], pos[2],
                         ori[0], ori[1], ori[2], ori[3],
-                        self._pos_bound[0], self._pos_bound[1], self._pos_bound[2],  # X, Y, Z bounds
-                        self._ori_bound[0], self._ori_bound[1], self._ori_bound[2])  # Rotation X, Y, Z bounds
+                        self.pos_bound[0], self.pos_bound[1], self.pos_bound[2],  # X, Y, Z bounds
+                        self.ori_bound[0], self.ori_bound[1], self.ori_bound[2])  # Rotation X, Y, Z bounds
         return result
 
 if __name__ == '__main__':

@@ -35,21 +35,18 @@ if __name__ == '__main__':
     ######################################
     rospy.init_node('main_process',anonymous=True)
 
-    #####################################
-    ## image_width
-    #####################################
-
-    image_width  = int(rospy.get_param('/handeye' + LorR + '/image_width'))
-    image_height = int(rospy.get_param('/handeye' + LorR + '/image_height'))
-
     ################################
     ##instance to check the arm status
     ################################
     LarmProcess = arm_process()
-    RarmProcess = arm_process()
 
+    ##################################
+    ###create handeye detect instance
+    ##################################
+    image_width  = int(rospy.get_param('/handeyeL/image_width'))
+    image_height = int(rospy.get_param('/handeyeL/image_height'))
 
-    conbeL = arm.Manipulator(LorR=LorR, handeye_w = image_width, handeye_h = image_height)
+    conbeL = arm.Manipulator(LorR='L', handeye_w = image_width, handeye_h = image_height)
     conbeL.go_to_ready()
 
     ###############################
@@ -58,7 +55,7 @@ if __name__ == '__main__':
     # MoveDirection : R => robot have to start from Left side
     ###############################
     rane_dist = 1.2
-    moveDirection = 'L'
+    moveDirection = 'R'
 
     if(moveDirection == 'R'):
         left_thred = -0.01
@@ -76,10 +73,11 @@ if __name__ == '__main__':
         try:
 
             print('start main loop')
-
+            stateL  = conbeL.main()
+            print('state: ',stateL)
             # ipdb.set_trace()
-            # conbeL.go_to_ready() #arm l process
-            # continue
+            conbeL.go_to_ready() #arm l process
+            continue
 
             #move dolly
             print('fail_counter: ',LarmProcess.fail_counter)
@@ -88,24 +86,21 @@ if __name__ == '__main__':
             print('usual control')
             Dolly.move_dolly()
             # ipdb.set_trace()
-
-            # rospy.sleep(1)
-            # print('sleep 1 sec')
             
-
             LarmProcess.init_counter()
+
             for i in range(2):
                 stateL  = conbeL.main()
                 print('state: ',stateL)
-                # ipdb.set_trace()
+                ipdb.set_trace()
                 LarmProcess.fail_counter[stateL] += 1
                 print(LarmProcess.fail_counter)
-                # ipdb.set_trace()
+                ipdb.set_trace()
                 if(stateL == 'SUCCEED'):
                     break
                 if(stateL == 'NO_TOMATO'):
                     break
-            # ipdb.set_trace()
+            ipdb.set_trace()
 
             if(LarmProcess.fail_counter['SUCCEED'] == 0):
                 print('distance control')

@@ -18,9 +18,8 @@ from utils import dxl_move as DXL
 from utils import handeye_sub as HandEye
 from utils import conbe_ik as CONBE
 from utils import client_trajectory
-from utils import arm_state_manager as arm_slave
 from utils import eef_tf_listener
-
+import target_sub
 
 class Manipulator():
     def __init__(self,LorR,handeye_w,handeye_h):
@@ -33,7 +32,7 @@ class Manipulator():
         ## create instance to calculate IK
         ##########################################
         pos_bound = [0.01,0.01,0.01]
-        ori_bound = [0.1,0.1,0.1]
+        ori_bound = [0.5,0.5,0.5]
 
         self.conbe_ik   = CONBE.ConbeIK(urdf_param='/' + LorR +'Arm/robot_description',LorR=LorR,pos_bound=pos_bound,ori_bound=ori_bound)
         self.conbe_ik.check_setting()
@@ -68,13 +67,19 @@ class Manipulator():
         ##################################
         # here describe the listener
         ##################################
-        self.target_marker_node = "/target_marker_" + LorR + "link0_frame"
+        # self.target_marker_node = "/target_marker_" + LorR + "link0_frame"
+
+        self.target_marker_sub = target_sub.target_subscriber(LorR)
 
         ##################################
         ###create handeye detect instance
         ##################################
         self.handEyeFeedback =HandEye.handeye(LorR=LorR,width=handeye_w,height=handeye_h)
 
+    def set_speed_parameters(self):
+        joint_speed = [1.0,0.5,1.0,1.0,1.0,1.0,0.5]
+        for i in range(7):
+            rospy.set_param('/' + self.LorR + 'Arm/joint' +str(i)+ '_controller/joint_speed',joint_speed[i])
 
     def create_marker(self,axis,LorR):
         marker = Marker()
@@ -177,16 +182,18 @@ class Manipulator():
         # if(math.fabs(py) > 0.30):
         #     state = False
         #     print('y-direction: out of worksp')
-        if(math.sqrt(px**2 + py**2 + (pz-0.325) **2) > 0.45 or math.sqrt(px**2 + py**2 + pz **2) < 0.05):
+        distance = math.sqrt(px**2 + py**2 + (pz-0.325) **2)
+        if(distance > 0.50 or distance < 0.05):
             state = False
-            print('target-distance: out of worksp')
+            print('x:{} ,y:{} ,z:{}'.format(px,py,pz))
+            print('target-distance: out of worksp distance : ', distance)
         return state
 
     def eef_open(self):
         self.eef_joint.move_to_goal(0.20)
 
     def eef_close(self):
-        self.eef_joint.move_to_goal(-1.3) 
+        self.eef_joint.move_to_goal(-1.7) 
 
     def key_control(self,arm_orientation):
         background = np.zeros((200,300,3), np.uint8)
@@ -204,7 +211,7 @@ class Manipulator():
 
                     for i in range(5):
                         print ('calculate IK*****')
-                        angles = conbe_ik.calculate(pos,ori)
+                        angles = self.conbe_ik.calculate(pos,ori)
                         if(angles == None):
                             print('calculation wasnot succeed')
                         else:
@@ -237,7 +244,8 @@ class Manipulator():
         return bool(w_error < self.handeye_w/80)
 
     def main(self):
-    
+        ###set speed params
+        self.set_speed_parameters()
         ## start
         self.state = 'OTW'
         ## MOVE :: READY POSE
@@ -253,33 +261,34 @@ class Manipulator():
         # #receive the target msg which is in target_frame
         # #get marker at least 5 times ?? haven't implemented yet
 
-        rospy.wait_for_message(self.target_marker_node, Marker)
         px = -1
-        offset_z = 0.04
-        while px < 0.01 : 
-            target_msg = rospy.wait_for_message(self.target_marker_node, Marker)
-            px = target_msg.points[0].x
-            rospy.sleep(0.5) 
+        offZ = 0.05
         
         error = 100        
         cnt_err = 0  
         tmp_pz = 0
+
+
+        ###########
         while cnt_err < 5:
-            target_msg = rospy.wait_for_message(self.target_marker_node, Marker)
-            
-            if (math.fabs(tmp_pz - target_msg.points[0].z) > 0.015):
+            # target_msg = rospy.wait_for_message(self.target_marker_node, Marker)
+            px,py,pz = self.target_marker_sub.getXYZ()
+            if (math.fabs(tmp_pz - pz) > 0.015):
                 cnt = 0
 
-            tmp_pz = target_msg.points[0].z
+            tmp_pz = pz
             cnt_err+=1
             rospy.sleep(0.1)
+
+        pz = pz + offZ
+        ###########
+
+        # px = 0.30
+        # py = 0
+        # pz = 0.39
         
         #target point ref link0 frame
         print('get target***' + self.LorR + 'Arm***')
-        target_ref_link0_point = target_msg.points
-        px = target_ref_link0_point[0].x
-        py = target_ref_link0_point[0].y 
-        pz = target_ref_link0_point[0].z + offset_z ##0.04 
 
         ##############################################
         ## HERE need to add the conditional branch
@@ -299,7 +308,7 @@ class Manipulator():
 
         ## need to add pi to yaw rotation to offset from link0 coordination to eef coordination
         #This is fixed value of this robot
-        offset = pi
+        # offset = pi
 
         ##offset_z is the offset value of Z-axiz. which decides the point to calculate
         #  the rotation of axis to decide the orientation of eef
@@ -310,18 +319,15 @@ class Manipulator():
         pitch,yaw = self.calc_orientation(px,py,pz,offset_z)
 
         ##Remember that the rotation will be done from Rot(z)*Rot(y)+Rot(x)
-        arm_orientation = tf.transformations.quaternion_from_euler(roll,pitch,yaw+offset)
+        arm_orientation = tf.transformations.quaternion_from_euler(roll,pitch,yaw+pi)
 
+        ####################
+        ## set pre-position
         #decide the preposition. this will be the destanse between eef and target along with Z-axis
-        offset_z = -0.001 #-0.002
-        # px,py,pz = set_pre_position(arm_orientation,px,py,pz,L)
+        #####################
+        L = -0.03 #-0.02        
+        pos = self.set_pre_position(arm_orientation,px,py,pz,L)
 
-        # ox = arm_orientation[0]
-        # oy = arm_orientation[1]
-        # oz = arm_orientation[2]
-        # ow = arm_orientation[3]
-
-        pos = self.set_pre_position(arm_orientation,px,py,pz,offset_z)
         ori = arm_orientation
 
         self.eef_markerZ = self.set_marker_param(self.eef_markerZ,'z',px,py,pz,arm_orientation)
@@ -333,8 +339,12 @@ class Manipulator():
         # self.pub.publish(self.eef_markerX)
 
         #GO TO PRE GRIP POSITION 
-        print ('calculate IK*****')
+        # print ('calculate IK*****')
+        ik_take_time = rospy.get_time()
         angles = self.conbe_ik.calculate(pos,ori)
+        ik_take_time = rospy.get_time() - ik_take_time
+        print ('ik_take_time',ik_take_time)
+        
         if(angles == None):
             print('calculation wasnot succeed')
             self.state = 'C_FAILED'
@@ -343,6 +353,26 @@ class Manipulator():
 
         self.conbe_arm.move(angles)
         rospy.sleep(1)
+
+        ###########go to real target#########
+        pos = [px,py,pz]
+
+        ik_take_time = rospy.get_time()
+        angles = self.conbe_ik.calculate(pos,ori)
+        ik_take_time = rospy.get_time() - ik_take_time
+        print ('ik_take_time',ik_take_time)
+        
+        if(angles == None):
+            print('calculation wasnot succeed')
+            self.state = 'C_FAILED'
+            self.go_to_ready()
+            return self.state
+
+        self.conbe_arm.move(angles)
+        rospy.sleep(1)
+
+        #######################################
+
 
         # key_control()
 
@@ -355,7 +385,8 @@ class Manipulator():
         #################################################
         # thred = 150000
         # thred = 180000
-        thred = 280
+        # thred = 280 
+        thred = 120
 
 
         #### approach untill the handeye cam filled more than thredshod
@@ -382,7 +413,7 @@ class Manipulator():
             handeye_recognition_isOK = False
             for i in range(20):
                 print('look for ...',i)
-                delta = 0.05 if(4 < i and i < 15) else -0.05
+                delta = 0.04 if(4 < i and i < 15) else -0.04
                 print(delta)
                 self.pitch_joint5.move_with_delta(delta)
 
@@ -408,9 +439,11 @@ class Manipulator():
         delta_h = -0.05
         delta_w = -0.02
         thed_over_cnt = 0
+        cnt_delta = 0
 
         current_joint5_state = self.pitch_joint5.get_current_pos()
-        while(thed_over_cnt < 3 and  self.handEyeFeedback.cnt < 30):
+        while(thed_over_cnt < 10 and  self.handEyeFeedback.cnt < 30 and not rospy.is_shutdown()):
+            begin_time = rospy.get_time()
             print('Hand Eye cnt : ',self.handEyeFeedback.cnt)
 
             # cv2.waitKey(1) & 0xFF == ord('q')
@@ -435,7 +468,7 @@ class Manipulator():
                     h_err = 100
                 elif (h_err < -100):
                     h_err = -100
-                current_joint5_state = current_joint5_state+(-h_err*0.0005)
+                current_joint5_state = current_joint5_state+(-h_err*0.0004)
                 out_h_control = current_joint5_state
                 self.pitch_joint5.move_to_goal(out_h_control)
 
@@ -450,37 +483,53 @@ class Manipulator():
                 out_w_control = current_joint0_state+(w_err*0.0003)
                 self.roll_joint0.move_to_goal(out_w_control)
 
-            # if(math.fabs(h_err) < 60 and math.fabs(w_err) < 60):
+
+            #### THIS IS JOG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #######################################################
+            # if(math.fabs(h_err) < 60 and math.fabs(w_err) < 60 and cnt_delta < 0.03):
             #     print('Z-adjust') 
             #     # #ipdb.set_trace()()
             #     delta = 0.007
-            #     pos = eef_jog.transform([0,0,delta])
+            #     pos = self.eef_jog.transform([0,0,delta])
             #     ori = arm_orientation
 
             #     for i in range(5):
             #         print ('calculate IK*****')
-            #         angles = conbe_ik.calculate(pos,ori)
+            #         angles = self.conbe_ik.calculate(pos,ori)
             #         if(angles == None):
             #             print('calculation wasnot succeed')
             #             # Arm.publish_state('C_FAILED')
             #         else:
-            #             conbe_arm.move(angles)
+            #             self.conbe_arm.move(angles)
             #             break
+            #     cnt_delta += delta
 
-            rospy.sleep(0.1)
-            if(tracking_try_count > 1):
-                print('****************tracking count over 1000')
+
+            print('***tracking count over ', tracking_try_count)
+            finish_time = rospy.get_time()
+            take_time = finish_time - begin_time
+            print ('take time : {} sec '.format(finish_time - begin_time))
+            
+            #loop sleep if take time less
+            LOOP_TIME = 0.05
+            if(take_time < LOOP_TIME):
+                rospy.sleep(LOOP_TIME - take_time)
+            
+            CNT_TRACK_SEC = 5/LOOP_TIME
+            if(tracking_try_count > CNT_TRACK_SEC):
+                print('***tracking count over ', tracking_try_count)
                 self.go_to_ready()
                 self.state = 'T_FAILED'
                 return self.state
         
         #ipdb.set_trace()()
-        print('*****grab-target')
+        #grip tomato
+        print('*****grab-tomato')
         rospy.sleep(2.0)
+        # self.eef_close()
+        # rospy.sleep(0.5)
         self.eef_close()
-        rospy.sleep(0.5)
-        self.eef_close()
-        rospy.sleep(2.0)
+        rospy.sleep(4.0)
 
         print('grab correctly')
         self.go_to_box()
